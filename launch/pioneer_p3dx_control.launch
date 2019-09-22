@@ -1,0 +1,10 @@
+<launch>
+
+	<!--Joystick
+	<node name="joystick_node" pkg="joy" type="joy_node"/>-->
+	<node name="pioneer_p3dx_control" pkg="ed_control" type="pioneer_p3dx_control"/>
+	<node name="RosAria_control" pkg="rosaria" type="RosAria">
+		<param name="port" value="/dev/ttyUSB2"/>
+	</node>
+
+</launch>
