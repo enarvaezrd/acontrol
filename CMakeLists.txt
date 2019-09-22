@@ -64,6 +64,13 @@ target_link_libraries(acontrol_arm ${catkin_LIBRARIES}  ${OpenCV_LIBRARIES})
 add_dependencies(acontrol_arm ed_control_generate_messages_cpp  ${OpenCV_LIBRARIES})
 
 
+add_executable(uav_control src/uav_control.cpp)
+        
+target_link_libraries(uav_control ${catkin_LIBRARIES}  ${OpenCV_LIBRARIES})
+
+add_dependencies(uav_control ed_control_generate_messages_cpp  ${OpenCV_LIBRARIES})
+
+
 add_executable(summit_control src/summit_control.cpp)
                               
 target_link_libraries(summit_control ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
