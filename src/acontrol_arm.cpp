@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     double error_x_old = 0.0;
     double error_y_old = 0.0;
 
-    float Ki = 0.02;//0.02
+    float Ki = 0.02; //0.02
     double Integral_x = 0.0;
     double Integral_y = 0.0;
 
@@ -121,7 +121,8 @@ int main(int argc, char **argv)
         iteration_indx++;
         Check_Limits(iteration_indx, 100);
         Altitude_Error = Altitude_Set_Point - uav_GPS_height;
-        Check_Limits(Altitude_Error, 1.0);
+        std::cout << "Altitude UAV: " << Altitude_Set_Point << std::endl;
+        Check_Limits(Altitude_Error, 2.0);
         bool joystick_state = false;
 
         if (!new_message_received)
@@ -141,7 +142,7 @@ int main(int argc, char **argv)
         {
             ed_control.linear.x = 0.0;
             ed_control.linear.y = 0.0;
-            ed_control.linear.z = 0.09 + key_z + (Altitude_Error * Kp_altitude);
+            ed_control.linear.z = 0.08 + key_z + (Altitude_Error * Kp_altitude);
             ed_control.angular.y = 0.0;
             ed_control.angular.x = 0.0;
             ed_control.angular.z = 0.0;
@@ -150,7 +151,10 @@ int main(int argc, char **argv)
             loop_rate.sleep();
             continue;
         }
-
+        if (Local_UAV_Position.linear.z != 0.0)
+        {
+            Altitude_Set_Point = Local_UAV_Position.linear.z;
+        }
         if (update_gain)
         {
             if (joystick_msg.axes[7] == 1.0)
@@ -197,9 +201,11 @@ int main(int argc, char **argv)
 
             ed_control.linear.x = joystick_x + key_x + Kp * Local_UAV_Position.linear.x + Kd * derivative_x + Ki * Integral_x;
             ed_control.linear.y = joystick_y + key_y + Kp * Local_UAV_Position.linear.y + Kd * derivative_y + Ki * Integral_y;
+
            // std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
            // std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
            // std::cout << "-**- UAV Y VALUES: joy " << joystick_y << ", der: " << derivative_y<< ", int: " << Integral_y << std::endl;
+
             ed_control.linear.z = key_z + (Altitude_Error * Kp_altitude) + joystick_z;
             ed_control.angular.y = 0.0;
             ed_control.angular.x = 0.0;
