@@ -17,6 +17,7 @@ using namespace std;
 vector<int> motor_ids{3, 4, 5, 6};
 vector<pair<int, int>> min_max_values_{make_pair(542, 3542), make_pair(0, 4095), make_pair(850, 3190), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
 vector<double> resolutions_{4096 / 360, 4096 / 360, 4096 / 360, 4096 / 360};                                                //4th joint 4096 / 360
+vector<double> offsets_{0.15, 0.0, 0.1, 0.0};
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;
@@ -46,6 +47,7 @@ int Convert_Angle_to_Value(double angle, int motor_index)
 }
 int Convert_Radian_to_Value(double radian, int motor_index)
 {
+    radian += offsets_[motor_index];
     double angle = radian * 57.2957779513;
     angle += 180;
     int value = round(angle * resolutions_[motor_index]);
@@ -124,7 +126,8 @@ int main(int argc, char **argv)
                 command_Torque.request.addr_name = string("Torque_Enable");
                 command_Torque.request.id = motor_ids[j];
                 command_Torque.request.value = 0;
-                client.call(command_Torque);
+                if (j != 2)
+                    client.call(command_Torque);
             }
             torque_enabled = false;
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -148,13 +151,12 @@ int main(int argc, char **argv)
         int mx_offset = 2;
         for (int i = 0; i < Number_Motors; i++)
         {
-                      
 
             double request_value = Convert_Radian_to_Value(trajectory_goal.trajectory.points[0].positions[i + mx_offset], i);
             command_Position.request.id = motor_ids[i];
             command_Position.request.value = request_value;
             client.call(command_Position);
-         //   std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;
+            //   std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;
         }
         loop_rate.sleep();
         ros::spinOnce();

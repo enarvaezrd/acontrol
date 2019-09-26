@@ -201,9 +201,11 @@ int main(int argc, char **argv)
 
             ed_control.linear.x = joystick_x + key_x + Kp * Local_UAV_Position.linear.x + Kd * derivative_x + Ki * Integral_x;
             ed_control.linear.y = joystick_y + key_y + Kp * Local_UAV_Position.linear.y + Kd * derivative_y + Ki * Integral_y;
-            std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
-            std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
-            std::cout << "-**- UAV Y VALUES: joy " << joystick_y << ", der: " << derivative_y << ", int: " << Integral_y << std::endl;
+
+           // std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
+           // std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
+           // std::cout << "-**- UAV Y VALUES: joy " << joystick_y << ", der: " << derivative_y<< ", int: " << Integral_y << std::endl;
+
             ed_control.linear.z = key_z + (Altitude_Error * Kp_altitude) + joystick_z;
             ed_control.angular.y = 0.0;
             ed_control.angular.x = 0.0;

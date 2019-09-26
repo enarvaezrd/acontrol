@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     ed_control.angular.x = 0.0;
     ed_control.angular.z = 0.0;
 
-    ros::Publisher pub_uav_control = ros_node_handler.advertise<geometry_msgs::Twist>("/robot2/cmd_vel", 1); //UAV control topic
+    ros::Publisher pub_uav_control = ros_node_handler.advertise<geometry_msgs::Twist>("/bebop/cmd_vel", 1); //UAV control topic
     ros::Publisher pub_takeoff = ros_node_handler.advertise<std_msgs::Empty>("/bebop/takeoff", 1);
     ros::Publisher pub_land = ros_node_handler.advertise<std_msgs::Empty>("/bebop/land", 1);
     for (int i = 0; i < 40; i++)
