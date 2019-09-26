@@ -164,6 +164,11 @@ int main(int argc, char **argv)
             loop_rate.sleep();
             continue;
         }
+        if(joystick_msg.buttons[6] == 1)
+        {
+            
+        }
+
         if (joystick_msg.buttons[7] == 1)
         {
             std_msgs::Empty Empty_msg;
