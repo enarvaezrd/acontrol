@@ -33,7 +33,6 @@ find_package(OpenCV 3 REQUIRED)
  )
 
 catkin_package(
- INCLUDE_DIRS include
 #  LIBRARIES ed_control
  CATKIN_DEPENDS roscpp
   actionlib

@@ -17,6 +17,7 @@ using namespace std;
 vector<int> motor_ids{1, 2};
 vector<pair<int, int>> min_max_values_{make_pair(-303750, 303750), make_pair(-175000, 175000)};
 vector<double> resolutions_{607500 / 360, 501923 / 360};
+vector<double> offsets_{-PI/2 , 0.0};
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;
@@ -49,6 +50,7 @@ int Convert_Angle_to_Value(double angle, int motor_index)
 }
 int Convert_Radian_to_Value(double radian, int motor_index)
 {
+    radian +=offsets_[motor_index]; 
     double angle = radian * 57.2957779513;
     if (motor_index == 0)
     {
