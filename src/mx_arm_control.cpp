@@ -5,6 +5,7 @@
 #include <chrono>
 #include <vector>
 #include <sensor_msgs/Joy.h>
+#include <sensor_msgs/JointState.h>
 #include <control_msgs/FollowJointTrajectoryGoal.h>
 #include <thread>
 #include <utility>
@@ -34,6 +35,12 @@ void Trajectory_Handler(const control_msgs::FollowJointTrajectoryGoal &traj_goal
     trajectory_goal = traj_goal;
     new_trajectory_received = true;
 }
+sensor_msgs::JointState Joints_State;
+void JointsState_Handler(const sensor_msgs::JointState &joints_state)
+{
+    Joints_State = joints_state;
+}
+
 int Convert_Angle_to_Value(double angle, int motor_index)
 {
     angle += 180;
@@ -70,6 +77,8 @@ int main(int argc, char **argv)
     ros::ServiceClient client = ros_node_handler.serviceClient<dynamixel_workbench_msgs::DynamixelCommand>("/dynamixel_workbench_mx/dynamixel_command");
     ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot2/arm_general/goal_command", 2, Trajectory_Handler);
     ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler); //Joystick
+
+    ros::Subscriber sub_joint_state = ros_node_handler.subscribe("/dynamixel_workbench_mx/joint_states", 1, JointsState_Handler); //Joint State
 
     ros::Rate loop_rate(8);
     dynamixel_workbench_msgs::DynamixelCommand command_Position;

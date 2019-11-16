@@ -30,7 +30,8 @@ int main(int argc, char **argv)
     ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler);
 
     geometry_msgs::Twist command_msg;
-    double Gain = 0.1;
+    double Gain = 0.2;
+    double GainAngular = Gain + 0.2;
     bool update_gain = true;
     while (ros::ok())
     {
@@ -52,9 +53,9 @@ int main(int argc, char **argv)
         if (update_gain)
         {
             if (joystick_msg.axes[6] == -1.0)
-                Gain += 0.015;
+                Gain += 0.025;
             if (joystick_msg.axes[6] == 1.0)
-                Gain -= 0.015;
+                Gain -= 0.025;
             update_gain = false;
         }
         if (joystick_msg.axes[6] == 0.0)
@@ -62,9 +63,11 @@ int main(int argc, char **argv)
 
         if (Gain < 0.0)
             Gain = 0.0;
+
+        GainAngular = -(Gain + 0.2);
         command_msg.angular.x = 0.0;
         command_msg.angular.y = 0.0;
-        command_msg.angular.z = -Gain * joystick_msg.axes[0];
+        command_msg.angular.z = GainAngular * joystick_msg.axes[0];
         command_msg.linear.x = Gain * joystick_msg.axes[1];
         command_msg.linear.y = 0.0;
         command_msg.linear.z = 0.0;
