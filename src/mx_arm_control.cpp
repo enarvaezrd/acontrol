@@ -139,7 +139,7 @@ int main(int argc, char **argv)
         {
             if (!torque_enabled)
             {
-                for (int j = 0; j < Number_Motors; j++)
+                for (int j = 0; j < Number_Motors-1; j++)
                 {
                     command_Torque.request.id = motor_ids[j];
                     command_Torque.request.value = 1;
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
             }
         }
         int mx_offset = 2;
-        for (int i = 0; i < Number_Motors; i++)
+        for (int i = 0; i < Number_Motors-1; i++)
         {
 
             double request_value = Convert_Radian_to_Value(trajectory_goal.trajectory.points[0].positions[i + mx_offset], i);

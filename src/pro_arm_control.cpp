@@ -10,7 +10,7 @@
 #include <utility>
 
 #define PI 3.141592654
-#define Number_Motors 2
+#define Number_Motors 1
 
 using namespace std;
 
