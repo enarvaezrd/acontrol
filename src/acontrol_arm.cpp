@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sensor_msgs/Joy.h>
 #include <chrono>
-
+#define WIRELESS_CONTROLLER_
 float key_x = 0.0, key_az, key_y = 0.0, key_z, range, uav_GPS_height, landing_flag, height;
 geometry_msgs::Pose markpose;
 geometry_msgs::Twist Local_UAV_Position;
@@ -57,6 +57,15 @@ sensor_msgs::Joy joystick_msg;
 void Joy_Handler(const sensor_msgs::Joy &joystick)
 {
     joystick_msg = joystick;
+
+#ifndef WIRELESS_CONTROLLER
+    double T2 = joystick_msg.axes[2];
+    joystick_msg.axes[2] = joystick_msg.axes[3];
+    joystick_msg.axes[3] = joystick_msg.axes[4];
+    joystick_msg.axes[4] = joystick_msg.axes[5];
+    joystick_msg.buttons[3] = joystick_msg.buttons[2];
+    joystick_msg.axes[5] = T2;
+#endif
     new_message_received = true;
 }
 
@@ -69,7 +78,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "talker");
     ros::NodeHandle ros_node_handler("~");
     cv::CommandLineParser parser(argc, argv, keys);
-    ros::Rate loop_rate(25.0);
+    ros::Rate loop_rate(30.0);
 
     geometry_msgs::Twist ed_control;
     ed_control.linear.x = 0.0;
@@ -98,13 +107,13 @@ int main(int argc, char **argv)
     float Altitude_Error = 0.0;
     int count = 0;
     float PI = 3.141592654;
-    float Kp = 0.9;
+    float Kp = 1.6;
 
-    float Kd = 0.6;
+    float Kd = 0.1;
     double error_x_old = 0.0;
     double error_y_old = 0.0;
 
-    float Ki = 0.05; //0.02
+    float Ki = 0.02; //0.02
     double Integral_x = 0.0;
     double Integral_y = 0.0;
 
@@ -112,7 +121,7 @@ int main(int argc, char **argv)
     int iteration_indx = 0;
 
     auto time_start = std::chrono::high_resolution_clock::now();
-    double Gain = 0.2;
+    double Gain = 0.2; // initial lateral gain
     bool update_gain = true;
     int count_null_commands = 0;
     while (ros::ok())
@@ -145,6 +154,12 @@ int main(int argc, char **argv)
             ed_control.angular.y = 0.0;
             ed_control.angular.x = 0.0;
             ed_control.angular.z = 0.0;
+
+            Integral_x = 0.0;
+            Integral_y = 0.0;
+
+            error_x_old = 0.0;
+            error_y_old = 0.0;
             pub_uav_control.publish(ed_control);
             ros::spinOnce();
             loop_rate.sleep();
@@ -190,19 +205,19 @@ int main(int argc, char **argv)
         else
         {
             auto time_end = std::chrono::high_resolution_clock::now();
-            auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
+            double elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start).count()/1000000.0;
             time_start = std::chrono::high_resolution_clock::now();
-            double derivative_x = 1000000.0 * (Local_UAV_Position.linear.x - error_x_old) / elapsed_th.count();
-            double derivative_y = 1000000.0 * (Local_UAV_Position.linear.y - error_y_old) / elapsed_th.count();
+            double derivative_x = (Local_UAV_Position.linear.x - error_x_old) / elapsed_th;
+            double derivative_y = (Local_UAV_Position.linear.y - error_y_old) / elapsed_th;
 
-            Integral_x += (Local_UAV_Position.linear.x * elapsed_th.count()) / 1000000.0;
-            Integral_y += (Local_UAV_Position.linear.y * elapsed_th.count()) / 1000000.0;
+            Integral_x += (Local_UAV_Position.linear.x * elapsed_th) ;
+            Integral_y += (Local_UAV_Position.linear.y * elapsed_th) ;
 
             ed_control.linear.x = joystick_x + key_x + Kp * Local_UAV_Position.linear.x + Kd * derivative_x + Ki * Integral_x;
             ed_control.linear.y = joystick_y + key_y + Kp * Local_UAV_Position.linear.y + Kd * derivative_y + Ki * Integral_y;
-           // std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
-           // std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
-           // std::cout << "-**- UAV Y VALUES: joy " << joystick_y << ", der: " << derivative_y << ", int: " << Integral_y << std::endl;
+            // std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
+            // std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
+            // std::cout << "-**- UAV Y VALUES: joy " << joystick_y << ", der: " << derivative_y << ", int: " << Integral_y << std::endl;
             ed_control.linear.z = key_z + (Altitude_Error * Kp_altitude) + joystick_z;
             ed_control.angular.y = 0.0;
             ed_control.angular.x = 0.0;

@@ -3,13 +3,18 @@
 #include <sensor_msgs/Joy.h>
 #include <geometry_msgs/Twist.h>
 #include <iostream>
-
+#define WIRELESS_CONTROLLER_
 bool new_message_received = false;
 sensor_msgs::Joy joystick_msg;
 //---------------JOYSTICK------------------------
 void Joy_Handler(const sensor_msgs::Joy &joystick)
 {
     joystick_msg = joystick;
+#ifndef WIRELESS_CONTROLLER
+    double T2 = joystick_msg.axes[2];
+   
+    joystick_msg.axes[5] = T2;
+#endif
     new_message_received = true;
 }
 
