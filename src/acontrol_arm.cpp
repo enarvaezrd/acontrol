@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sensor_msgs/Joy.h>
 #include <chrono>
-#define WIRELESS_CONTROLLER_
+#define WIRELESS_CONTROLLER
 float key_x = 0.0, key_az, key_y = 0.0, key_z, range, uav_GPS_height, landing_flag, height;
 geometry_msgs::Pose markpose;
 geometry_msgs::Twist Local_UAV_Position;

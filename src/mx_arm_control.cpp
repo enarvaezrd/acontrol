@@ -11,14 +11,14 @@
 #include <utility>
 
 #define PI 3.141592654
-#define Number_Motors 4
+#define Number_Motors 3
 
 using namespace std;
 
-vector<int> motor_ids{3, 4, 5, 6};
-vector<pair<int, int>> min_max_values_{make_pair(542, 3542), make_pair(0, 4095), make_pair(850, 3190), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
-vector<double> resolutions_{4096 / 360, 4096 / 360, 4096 / 360, 4096 / 360};                                                //4th joint 4096 / 360
-vector<double> offsets_{0.15, 0.0, 0.1, 0.0};
+vector<int> motor_ids{4, 5, 6};
+vector<pair<int, int>> min_max_values_{make_pair(0, 4095), make_pair(850, 3190), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
+vector<double> resolutions_{4096 / 360, 4096 / 360, 4096 / 360};                                                //4th joint 4096 / 360
+vector<double> offsets_{0.0, 0.1, 0.0};
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
         command_Properties.request.addr_name = string("Torque_Enable");
         command_Properties.request.id = motor_ids[j];
         command_Properties.request.value = 0;
-        if (j > 0)
+        if (j!=1)
         {
             client.call(command_Properties);
         }
@@ -130,12 +130,12 @@ int main(int argc, char **argv)
         }
         if (!joystick_state)
         {
-            for (int j = 1; j < Number_Motors; j++)
+            for (int j = 0; j < Number_Motors; j++)
             {
                 command_Torque.request.addr_name = string("Torque_Enable");
                 command_Torque.request.id = motor_ids[j];
                 command_Torque.request.value = 0;
-                if (j != 2)
+                if (j != 1)
                     client.call(command_Torque);
             }
             torque_enabled = false;
