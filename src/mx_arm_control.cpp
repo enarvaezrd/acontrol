@@ -75,7 +75,7 @@ int main(int argc, char **argv)
     bool service_state = ros::service::exists("/dynamixel_workbench_mx/dynamixel_command", true);
     cout << "service state " << service_state << endl;
     ros::ServiceClient client = ros_node_handler.serviceClient<dynamixel_workbench_msgs::DynamixelCommand>("/dynamixel_workbench_mx/dynamixel_command");
-    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot2/arm_general/goal_command", 2, Trajectory_Handler);
+    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 2, Trajectory_Handler);
     ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler); //Joystick
 
     ros::Subscriber sub_joint_state = ros_node_handler.subscribe("/dynamixel_workbench_mx/joint_states", 1, JointsState_Handler); //Joint State
