@@ -14,6 +14,7 @@
 
 using namespace std;
 
+
 vector<int> motor_ids{11, 22, 33};
 //vector<int> motor_ids{2};
 //vector<double> resolutions_{1003846 / 360};
@@ -22,6 +23,7 @@ vector<int> motor_ids{11, 22, 33};
 vector<pair<int, int>> min_max_values_{make_pair(-303750, 303750), make_pair(-175000, 175000), make_pair(-228000, 228000)};
 vector<double> resolutions_{607500 / 360, 1003846 / 360, 607500 / 360};
 vector<double> offsets_{0.0, 0.0, 0.0};
+
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;
@@ -145,6 +147,7 @@ int main(int argc, char **argv)
             double request_value = Convert_Radian_to_Value(trajectory_goal.trajectory.points[0].positions[i], i);
             command_Position.request.id = motor_ids[i];
             command_Position.request.value = request_value;
+            std::cout<<"ID: " <<motor_ids[i]<<"value: "<<request_value<<std::endl;
             client.call(command_Position);
         }
         loop_rate.sleep();

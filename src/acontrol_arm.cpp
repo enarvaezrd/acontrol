@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "talker");
     ros::NodeHandle ros_node_handler("~");
     cv::CommandLineParser parser(argc, argv, keys);
-    ros::Rate loop_rate(30.0);
+    ros::Rate loop_rate(28.0);
 
     geometry_msgs::Twist ed_control;
     ed_control.linear.x = 0.0;
