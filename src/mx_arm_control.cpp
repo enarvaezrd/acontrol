@@ -12,13 +12,13 @@
 
 #define PI 3.141592654
 #define Number_Motors 3
-
+int mx_offset = 3; //first mx motor is in mx_offset joint
 using namespace std;
 
-vector<int> motor_ids{4, 5, 6};
+vector<int> motor_ids{44, 55, 66};
 vector<pair<int, int>> min_max_values_{make_pair(0, 4095), make_pair(850, 3190), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
-vector<double> resolutions_{4096 / 360, 4096 / 360, 4096 / 360};                                                //4th joint 4096 / 360
-vector<double> offsets_{0.0, 0.1, 0.0};
+vector<double> resolutions_{4096.0 / 360.0, 4096.0 / 360.0, 4096.0 / 360.0};                          //4th joint 4096 / 360
+vector<double> offsets_{0.0, 0.0, 0.0};
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;
@@ -54,14 +54,21 @@ int Convert_Angle_to_Value(double angle, int motor_index)
 }
 int Convert_Radian_to_Value(double radian, int motor_index)
 {
+    //std::cout << "radian " << radian << std::endl;
     radian += offsets_[motor_index];
+    //std::cout << "radian later " << radian << std::endl;
     double angle = radian * 57.2957779513;
-    angle += 180;
+    //std::cout << "angle " << angle << std::endl;
+    angle += 180; //as zero degrees is at 2048, offset in values
+
+    //std::cout << "angle later " << angle << std::endl;
     int value = round(angle * resolutions_[motor_index]);
     if (value > min_max_values_[motor_index].second)
         value = min_max_values_[motor_index].second;
     if (value < min_max_values_[motor_index].first)
         value = min_max_values_[motor_index].first;
+
+   // std::cout << "value " << value << std::endl;
 
     return value;
 }
@@ -75,12 +82,12 @@ int main(int argc, char **argv)
     bool service_state = ros::service::exists("/dynamixel_workbench_mx/dynamixel_command", true);
     cout << "service state " << service_state << endl;
     ros::ServiceClient client = ros_node_handler.serviceClient<dynamixel_workbench_msgs::DynamixelCommand>("/dynamixel_workbench_mx/dynamixel_command");
-    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot2/arm_general/goal_command", 2, Trajectory_Handler);
+    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 2, Trajectory_Handler);
     ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler); //Joystick
 
     ros::Subscriber sub_joint_state = ros_node_handler.subscribe("/dynamixel_workbench_mx/joint_states", 1, JointsState_Handler); //Joint State
 
-    ros::Rate loop_rate(8);
+    ros::Rate loop_rate(20);
     dynamixel_workbench_msgs::DynamixelCommand command_Position;
     command_Position.request.command = "";
     command_Position.request.addr_name = string("Goal_Position");
@@ -98,7 +105,7 @@ int main(int argc, char **argv)
         command_Properties.request.addr_name = string("Torque_Enable");
         command_Properties.request.id = motor_ids[j];
         command_Properties.request.value = 0;
-        if (j!=1)
+        if (j != 1)
         {
             client.call(command_Properties);
         }
@@ -120,7 +127,6 @@ int main(int argc, char **argv)
         }
         else if (joystick_msg.axes[5] != -1.0)
         {
-
             joystick_state = false;
         }
         else
@@ -135,11 +141,11 @@ int main(int argc, char **argv)
                 command_Torque.request.addr_name = string("Torque_Enable");
                 command_Torque.request.id = motor_ids[j];
                 command_Torque.request.value = 0;
-                if (j != 1)
+              //  if (j != 1)
                     client.call(command_Torque);
             }
             torque_enabled = false;
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
             ros::spinOnce();
             loop_rate.sleep();
             continue;
@@ -157,15 +163,14 @@ int main(int argc, char **argv)
                 torque_enabled = true;
             }
         }
-        int mx_offset = 2;
+
         for (int i = 0; i < Number_Motors; i++)
         {
-
             double request_value = Convert_Radian_to_Value(trajectory_goal.trajectory.points[0].positions[i + mx_offset], i);
             command_Position.request.id = motor_ids[i];
             command_Position.request.value = request_value;
             client.call(command_Position);
-            //   std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;
+           // std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;
         }
         loop_rate.sleep();
         ros::spinOnce();
