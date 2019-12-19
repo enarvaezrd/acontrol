@@ -10,17 +10,20 @@
 #include <utility>
 
 #define PI 3.141592654
-#define Number_Motors 2
+#define Number_Motors 3
 
 using namespace std;
 
-vector<int> motor_ids{1, 2};
-//vector<pair<int, int>> min_max_values_{make_pair(-303750, 303750), make_pair(-175000, 175000)}; //With pro H54
-//vector<double> resolutions_{607500 / 360, 501923 / 360}; //With pro H54
 
-vector<pair<int, int>> min_max_values_{make_pair(-303750, 303750), make_pair(-202500, 202500)}; //With pro H42P
-vector<double> resolutions_{607500 / 360, 607500 / 360}; //With pro H42P
-vector<double> offsets_{0 , -2*PI};
+vector<int> motor_ids{11, 22, 33};
+//vector<int> motor_ids{2};
+//vector<double> resolutions_{1003846 / 360};
+//vector<double> offsets_{0.0};
+//vector<pair<int, int>> min_max_values_{make_pair(-175000, 175000)};
+vector<pair<int, int>> min_max_values_{make_pair(-303750, 303750), make_pair(-175000, 175000), make_pair(-228000, 228000)};
+vector<double> resolutions_{607500 / 360, 1003846 / 360, 607500 / 360};
+vector<double> offsets_{0.0, 0.0, 0.0};
+
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;
@@ -53,7 +56,7 @@ int Convert_Angle_to_Value(double angle, int motor_index)
 }
 int Convert_Radian_to_Value(double radian, int motor_index)
 {
-    radian +=offsets_[motor_index]; 
+    radian += offsets_[motor_index];
     double angle = radian * 57.2957779513;
     if (motor_index == 0)
     {
@@ -76,7 +79,7 @@ int main(int argc, char **argv)
     bool service_state = ros::service::exists("/dynamixel_workbench_pro/dynamixel_command", true);
     cout << "service state " << service_state << endl;
     ros::ServiceClient client = ros_node_handler.serviceClient<dynamixel_workbench_msgs::DynamixelCommand>("/dynamixel_workbench_pro/dynamixel_command");
-    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot2/arm_general/goal_command", 2, Trajectory_Handler);
+    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 2, Trajectory_Handler);
     ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler); //Joystick
 
     ros::Rate loop_rate(3);
@@ -111,12 +114,13 @@ int main(int argc, char **argv)
         }
         if (!joystick_state)
         {
-            for (int j = 0; j < Number_Motors; j++)
+            for (int j = 0; j < 1; j++)
             {
                 command_Torque.request.addr_name = string("Torque_Enable");
                 command_Torque.request.id = motor_ids[j];
                 command_Torque.request.value = 0;
-                client.call(command_Torque);
+                if (j != 1)
+                    client.call(command_Torque);
             }
             torque_enabled = false;
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -146,7 +150,6 @@ int main(int argc, char **argv)
             std::cout<<"ID: " <<motor_ids[i]<<"value: "<<request_value<<std::endl;
             client.call(command_Position);
         }
-
         loop_rate.sleep();
         ros::spinOnce();
     }

@@ -6,6 +6,7 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  dynamixel_sdk
   rospy
   std_msgs
   geometry_msgs
@@ -35,6 +36,7 @@ find_package(OpenCV 3 REQUIRED)
 catkin_package(
 #  LIBRARIES ed_control
  CATKIN_DEPENDS roscpp
+  dynamixel_sdk
   actionlib
   trajectory_msgs
   hector_uav_msgs
@@ -87,7 +89,7 @@ add_dependencies(pioneer_p3dx_control ed_control_generate_messages_cpp  ${OpenCV
 
 add_executable(pioneer_p3dx_control_simm src/pioneer_p3dx_control_simm.cpp)
                               
-target_link_libraries(pioneer_p3dx_control_simm ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(pioneer_p3dx_control_simm ${catkin_LIBRARIES} )
 
 add_dependencies(pioneer_p3dx_control_simm ed_control_generate_messages_cpp  ${OpenCV_LIBRARIES})
 
@@ -113,4 +115,26 @@ target_link_libraries(single_motor_joy_control ${catkin_LIBRARIES})
 
 add_dependencies(single_motor_joy_control ed_control_generate_messages_cpp )
 
+
+
+add_executable(dokku_motors_control src/dokku_arm_control.cpp)
+   
+target_link_libraries(dokku_motors_control ${catkin_LIBRARIES})
+
+add_dependencies(dokku_motors_control ed_control_generate_messages_cpp )
+
+
+
+add_executable(pro_control_sdk src/pro_control_sdk.cpp)
+   
+target_link_libraries(pro_control_sdk ${catkin_LIBRARIES})
+
+add_dependencies(pro_control_sdk ed_control_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+
+
+add_executable(opencv_image_filter src/image_filter.cpp)
+   
+target_link_libraries(opencv_image_filter ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+add_dependencies(opencv_image_filter ed_control_generate_messages_cpp ${catkin_EXPORTED_TARGETS} ${OpenCV_LIBRARIES})
 

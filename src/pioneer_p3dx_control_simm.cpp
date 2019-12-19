@@ -4,6 +4,7 @@
 #include <geometry_msgs/Twist.h>
 #include <iostream>
 #define WIRELESS_CONTROLLER
+
 bool new_message_received = false;
 sensor_msgs::Joy joystick_msg;
 //---------------JOYSTICK------------------------
@@ -40,7 +41,11 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         if (!new_message_received)
+        {
+            ros::spinOnce();
+            loop_rate.sleep();
             continue;
+        }
         if (joystick_msg.axes[5] == 0.0 || joystick_msg.axes[5] == 1.0)
         {
             command_msg.angular.x = 0.0;
