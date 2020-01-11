@@ -138,3 +138,11 @@ target_link_libraries(opencv_image_filter ${catkin_LIBRARIES} ${OpenCV_LIBRARIES
 
 add_dependencies(opencv_image_filter ed_control_generate_messages_cpp ${catkin_EXPORTED_TARGETS} ${OpenCV_LIBRARIES})
 
+
+add_executable(arduino_control src/arduino_control.cpp)
+   
+target_link_libraries(arduino_control ${catkin_LIBRARIES})
+
+add_dependencies(arduino_control ed_control_generate_messages_cpp )
+
+
