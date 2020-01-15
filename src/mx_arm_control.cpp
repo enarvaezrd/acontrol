@@ -68,7 +68,7 @@ int Convert_Radian_to_Value(double radian, int motor_index)
     if (value < min_max_values_[motor_index].first)
         value = min_max_values_[motor_index].first;
 
-   // std::cout << "value " << value << std::endl;
+    // std::cout << "value " << value << std::endl;
 
     return value;
 }
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
     ros::Subscriber sub_joint_state = ros_node_handler.subscribe("/dynamixel_workbench_mx/joint_states", 1, JointsState_Handler); //Joint State
 
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(25);
     dynamixel_workbench_msgs::DynamixelCommand command_Position;
     command_Position.request.command = "";
     command_Position.request.addr_name = string("Goal_Position");
@@ -114,7 +114,15 @@ int main(int argc, char **argv)
         command_Properties.request.value = 3;
         client.call(command_Properties);
         command_Properties.request.addr_name = string("Profile_Velocity");
-        command_Properties.request.value = 20;
+        if (j == 1)
+        {
+            command_Properties.request.value = 12; //17*0.229 = 3.893 RPM  MX64
+        }
+        else
+        {
+            command_Properties.request.value = 25;//20*0.229 = 4.58 RPM  MX64 MX28
+        }
+
         client.call(command_Properties);
     }
     while (ros::ok())
@@ -141,11 +149,11 @@ int main(int argc, char **argv)
                 command_Torque.request.addr_name = string("Torque_Enable");
                 command_Torque.request.id = motor_ids[j];
                 command_Torque.request.value = 0;
-              //  if (j != 1)
-                    client.call(command_Torque);
+                //  if (j != 1)
+                client.call(command_Torque);
             }
             torque_enabled = false;
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             ros::spinOnce();
             loop_rate.sleep();
             continue;
@@ -170,7 +178,7 @@ int main(int argc, char **argv)
             command_Position.request.id = motor_ids[i];
             command_Position.request.value = request_value;
             client.call(command_Position);
-           // std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;
+            // std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;
         }
         loop_rate.sleep();
         ros::spinOnce();
