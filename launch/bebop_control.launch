@@ -1,6 +1,7 @@
 <launch>
 
 	<!--Joystick-->
+
 	<arg name="launch_joystick" default="true"/> 
 	<arg name="ip" default="192.168.42.1" />
         <arg name="namespace" default="bebop" />
@@ -9,6 +10,7 @@
 
 	<!--Ed control UAV node-->
 	<node name="uav_control" pkg="ed_control" type="uav_control"/>
+
 
 	<!--Bebop 2 driver-->
 	<include file="$(find bebop_driver)/launch/bebop_node.launch">
