@@ -14,7 +14,7 @@
 
 float key_x = 0.0, key_az, key_y = 0.0, key_z, range, uav_GPS_height, landing_flag, height;
 geometry_msgs::Pose markpose;
-geometry_msgs::Twist Local_UAV_Position;
+geometry_msgs::Twist Local_UAV_Position,empty_position;
 int state;
 
 //---------------KEYBOARD------------------------
@@ -39,10 +39,12 @@ void GPS_Handler(const sensor_msgs::NavSatFix &gp)
 }
 
 //---------TOPIC HANDLER - FROM RRT NODE-----------
+bool new_local_pos=false;
 void Local_uav_Position_Handler(const geometry_msgs::Twist &local_uav_position)
 {
     Local_UAV_Position = local_uav_position; //correction values
     //Local_UAV_Position.linear.y *= -1.0;
+        new_local_pos=true;
     return;
 }
 
@@ -103,13 +105,13 @@ int main(int argc, char **argv)
     float Altitude_Error = 0.0;
     int count = 0;
     float PI = 3.141592654;
-    float Kp = 0.3;
+    float Kp = 0.08;
 
-    float Kd = 0.5;
+    float Kd = 0.03;
     double error_x_old = 0.0;
     double error_y_old = 0.0;
 
-    float Ki = 0.02; //0.02
+    float Ki = 0.002; //0.02
     double Integral_x = 0.0;
     double Integral_y = 0.0;
 
@@ -122,9 +124,21 @@ int main(int argc, char **argv)
     int count_null_commands = 0;
     bool take_off = false;
     bool reset_state=false;
+    
     while (ros::ok())
     {
-
+         
+        if (new_local_pos==false)
+            {
+                Local_UAV_Position=empty_position;
+                //Integral_x=0.0;
+                //Integral_y=0.0;
+            }
+            else
+            {
+                new_local_pos=false;
+            }
+float Gain_z_command=0.0;
         iteration_indx++;
         Check_Limits(iteration_indx, 100);
 
@@ -186,7 +200,7 @@ int main(int argc, char **argv)
             ros::spinOnce();
             loop_rate.sleep();
             continue;
-
+        }
 
         if (joystick_msg.buttons[7] == 1)
         {
@@ -201,26 +215,45 @@ int main(int argc, char **argv)
         if (update_gain)
         {
             if (joystick_msg.axes[7] == 1.0)
-                Gain += 0.01;
+                {Gain += 0.01;}
             if (joystick_msg.axes[7] == -1.0)
-                Gain -= 0.01;
+                {Gain -= 0.01;}
             update_gain = false;
         }
         if (joystick_msg.axes[7] == 0.0)
             update_gain = true;
 
-        if (Gain < 0.0)
+        if (Gain < 0.0)  //uncomment when gain is variable for xy
             Gain = 0.0;
-        float joystick_x = Gain * joystick_msg.axes[3];
+        float joystick_x = Gain * joystick_msg.axes[3];  //fixed gain
         float joystick_y = Gain * joystick_msg.axes[2];
-        float Gain_z = -2.0;
+        float Gain_z = 0.0;
         double angularJoyCommand = -joystick_msg.buttons[1] + joystick_msg.buttons[3];
 
+        
+        
+        
         if (joystick_msg.axes[4] == 0.0 || joystick_msg.axes[4] == 1.0)
         {
             Gain_z = 0.0;
         }
-        float joystick_z =  Gain_z * (joystick_msg.axes[4] - 1.0) + Gain/10.0;
+        else
+        {
+            Gain_z = 2.0;
+        }
+        if (joystick_msg.buttons[14] == 1.0)
+        {
+            Gain_z = -2.0;
+        }
+        if( Local_UAV_Position.linear.y>0 )
+        {
+            Gain_z_command = 1.0;
+        }
+        if( Local_UAV_Position.linear.y<0 )
+        {
+            Gain_z_command = -1.0;
+        }
+        float joystick_z =  Gain * (Gain_z_command + Gain_z);
 
         auto time_end = std::chrono::high_resolution_clock::now();
         auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
@@ -236,7 +269,7 @@ int main(int argc, char **argv)
 
 
        //std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
-        std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
+        //std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
 
 
         ed_control.linear.z = joystick_z;
@@ -264,6 +297,7 @@ int main(int argc, char **argv)
         pub_uav_control.publish(ed_control);
         //pub3.publish(sum_control);
         ros::spinOnce();
+
 
         loop_rate.sleep();
         ++count;

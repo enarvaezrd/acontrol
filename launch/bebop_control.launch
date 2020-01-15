@@ -9,7 +9,7 @@
 	<node if="$(arg launch_joystick)" name="joystick_node" pkg="joy" type="joy_node"/>
 
 	<!--Ed control UAV node-->
-	<node name="uav_control" pkg="ed_control" type="uav_control"/>
+	<node name="uav_control" pkg="ed_control" type="uav_control"  output="screen"/>
 
 
 	<!--Bebop 2 driver-->
