@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
     ros::Subscriber sub_joint_state = ros_node_handler.subscribe("/dynamixel_workbench_mx/joint_states", 1, JointsState_Handler); //Joint State
 
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(25);
     dynamixel_workbench_msgs::DynamixelCommand command_Position;
     command_Position.request.command = "";
     command_Position.request.addr_name = string("Goal_Position");
@@ -116,11 +116,11 @@ int main(int argc, char **argv)
         command_Properties.request.addr_name = string("Profile_Velocity");
         if (j == 1)
         {
-            command_Properties.request.value = 17; //17*0.229 = 3.893 RPM  MX64
+            command_Properties.request.value = 12; //17*0.229 = 3.893 RPM  MX64
         }
         else
         {
-            command_Properties.request.value = 35;//20*0.229 = 4.58 RPM  MX64 MX28
+            command_Properties.request.value = 25;//20*0.229 = 4.58 RPM  MX64 MX28
         }
 
         client.call(command_Properties);

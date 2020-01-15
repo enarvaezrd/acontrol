@@ -164,9 +164,8 @@ int main(int argc, char **argv)
             loop_rate.sleep();
             continue;
         }
-        if(joystick_msg.buttons[6] == 1)
+        if (joystick_msg.buttons[6] == 1)
         {
-            
         }
 
         if (joystick_msg.buttons[7] == 1)
@@ -213,17 +212,16 @@ int main(int argc, char **argv)
         ed_control.linear.x = joystick_x + Kp * Local_UAV_Position.linear.x + Kd * derivative_x + Ki * Integral_x;
         ed_control.linear.y = joystick_y + Kp * Local_UAV_Position.linear.y + Kd * derivative_y + Ki * Integral_y;
 
-
-      //  std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
-       // std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
+        // std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
+        // std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
 
         ed_control.linear.z = joystick_z;
         ed_control.angular.y = 0.0;
         ed_control.angular.x = 0.0;
         ed_control.angular.z = angularJoyCommand;
 
-        std::cout << "-**- UAV JOY VALUES: x" << ed_control.linear.x << ", y: " << ed_control.linear.y << ", z: " << ed_control.linear.z <<", angular: "<<ed_control.angular.z<< std::endl;
-      // if (iteration_indx < 55)
+        std::cout << "-**- UAV JOY VALUES: x" << ed_control.linear.x << ", y: " << ed_control.linear.y << ", z: " << ed_control.linear.z << ", angular: " << ed_control.angular.z << std::endl;
+        // if (iteration_indx < 55)
         // ed_control.linear.z = 0.01;
 
         error_x_old = Local_UAV_Position.linear.x;

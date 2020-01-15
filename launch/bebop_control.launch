@@ -1,8 +1,18 @@
 <launch>
 
 	<!--Joystick-->
-	<node name="joystick_node" pkg="joy" type="joy_node"/>
+	<arg name="launch_joystick" default="true"/> 
+	<arg name="ip" default="192.168.42.1" />
+        <arg name="namespace" default="bebop" />
+
+	<node if="$(arg launch_joystick)" name="joystick_node" pkg="joy" type="joy_node"/>
+
+	<!--Ed control UAV node-->
 	<node name="uav_control" pkg="ed_control" type="uav_control"/>
 
-	<include file="$(find bebop_driver)/launch/bebop_node.launch"/>
+	<!--Bebop 2 driver-->
+	<include file="$(find bebop_driver)/launch/bebop_node.launch">
+		<arg name="ip" default="$(arg ip)" />
+		<arg name="namespace" default="$(arg namespace)" />
+	</include>
 </launch>
