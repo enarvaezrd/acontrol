@@ -84,6 +84,7 @@ int main(int argc, char **argv)
     ros::Publisher pub_uav_control = ros_node_handler.advertise<geometry_msgs::Twist>("/bebop/cmd_vel", 1); //UAV control topic
     ros::Publisher pub_takeoff = ros_node_handler.advertise<std_msgs::Empty>("/bebop/takeoff", 1);
     ros::Publisher pub_land = ros_node_handler.advertise<std_msgs::Empty>("/bebop/land", 1);
+    ros::Publisher pub_reset = ros_node_handler.advertise<std_msgs::Empty>("/bebop/reset", 1);
     for (int i = 0; i < 40; i++)
     {
         pub_uav_control.publish(ed_control);
@@ -120,12 +121,24 @@ int main(int argc, char **argv)
     bool update_gain = true;
     int count_null_commands = 0;
     bool take_off = false;
+    bool reset_state=false;
     while (ros::ok())
     {
 
         iteration_indx++;
         Check_Limits(iteration_indx, 100);
 
+        if(reset_state)
+        {
+            if(joystick_msg.buttons[6] == 1)
+            {
+                reset_state=false;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            ros::spinOnce();
+            loop_rate.sleep();
+            continue;
+        }
         bool joystick_state = false;
 
         if (!new_message_received)
@@ -164,9 +177,15 @@ int main(int argc, char **argv)
             loop_rate.sleep();
             continue;
         }
-        if(joystick_msg.buttons[6] == 1)
+        if(joystick_msg.buttons[6] == 1)  //emergency mode, will fall, take care
         {
-            
+            std_msgs::Empty Empty_msg;
+            pub_reset.publish(Empty_msg);
+            reset_state=true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            ros::spinOnce();
+            loop_rate.sleep();
+            continue;
         }
 
         if (joystick_msg.buttons[7] == 1)
@@ -175,6 +194,8 @@ int main(int argc, char **argv)
             pub_land.publish(Empty_msg);
             take_off = false;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            ros::spinOnce();
+            loop_rate.sleep();
             continue;
         }
         if (update_gain)
@@ -199,7 +220,7 @@ int main(int argc, char **argv)
         {
             Gain_z = 0.0;
         }
-        float joystick_z = Gain * Gain_z * (joystick_msg.axes[4] - 1.0);
+        float joystick_z =  Gain_z * (joystick_msg.axes[4] - 1.0) + Gain/10.0;
 
         auto time_end = std::chrono::high_resolution_clock::now();
         auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
@@ -214,8 +235,8 @@ int main(int argc, char **argv)
         ed_control.linear.y = joystick_y + Kp * Local_UAV_Position.linear.y + Kd * derivative_y + Ki * Integral_y;
 
 
-      //  std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
-       // std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
+       //std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
+        std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
 
         ed_control.linear.z = joystick_z;
         ed_control.angular.y = 0.0;
