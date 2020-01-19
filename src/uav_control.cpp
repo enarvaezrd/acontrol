@@ -245,15 +245,15 @@ float Gain_z_command=0.0;
         {
             Gain_z = -2.0;
         }
-        if( Local_UAV_Position.linear.y>0 )
+        if( Local_UAV_Position.linear.z>0 )   //Position linear z is the requested altitude
         {
             Gain_z_command = 1.0;
         }
-        if( Local_UAV_Position.linear.y<0 )
+        if( Local_UAV_Position.linear.z<0 )
         {
             Gain_z_command = -1.0;
         }
-        float joystick_z =  Gain * (Gain_z_command + Gain_z);
+        float joystick_z = Gain * ( Gain_z);// Gain * (Gain_z_command + Gain_z);
 
         auto time_end = std::chrono::high_resolution_clock::now();
         auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
