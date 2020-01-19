@@ -120,7 +120,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            command_Properties.request.value = 25;//20*0.229 = 4.58 RPM  MX64 MX28
+            command_Properties.request.value = 35;//20*0.229 = 4.58 RPM  MX64 MX28
         }
 
         client.call(command_Properties);
