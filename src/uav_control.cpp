@@ -277,7 +277,9 @@ float Gain_z_command=0.0;
         ed_control.angular.x = 0.0;
         ed_control.angular.z = angularJoyCommand;
 
-        std::cout << "-**- UAV JOY VALUES: x" << ed_control.linear.x << ", y: " << ed_control.linear.y << ", z: " << ed_control.linear.z << ", angular: " << ed_control.angular.z << std::endl;
+        std::cout << "-**- UAV JOY VALUES    : x" << joystick_x << ", y: " << joystick_y << ", z: " << joystick_z << ", angular: " << angularJoyCommand << std::endl;
+        
+        std::cout << "-**- UAV CONTROL VALUES: x" << ed_control.linear.x << ", y: " << ed_control.linear.y << ", z: " << ed_control.linear.z << ", angular: " << ed_control.angular.z << std::endl;
         // if (iteration_indx < 55)
         // ed_control.linear.z = 0.01;
 
