@@ -14,7 +14,7 @@
 
 float key_x = 0.0, key_az, key_y = 0.0, key_z, range, uav_GPS_height, landing_flag, height;
 geometry_msgs::Pose markpose;
-geometry_msgs::Twist Local_UAV_Position,empty_position;
+geometry_msgs::Twist Local_UAV_Position, empty_position;
 int state;
 
 //---------------KEYBOARD------------------------
@@ -39,23 +39,24 @@ void GPS_Handler(const sensor_msgs::NavSatFix &gp)
 }
 
 //---------TOPIC HANDLER - FROM RRT NODE-----------
-bool new_local_pos=false;
+bool new_local_pos = false;
 void Local_uav_Position_Handler(const geometry_msgs::Twist &local_uav_position)
 {
     Local_UAV_Position = local_uav_position; //correction values
-    //Local_UAV_Position.linear.y *= -1.0;
-        new_local_pos=true;
+                                             //Local_UAV_Position.linear.y *= -1.0;
+    new_local_pos = true;
     return;
 }
 
-void Check_Limits(float value, float limit)
+float Check_Limits(float value, float limit)
 {
     if (value > limit)
         value = limit;
     if (value < -limit)
         value = -limit;
-    return;
+    return value;
 }
+
 bool new_message_received = false;
 sensor_msgs::Joy joystick_msg;
 void Joy_Handler(const sensor_msgs::Joy &joystick)
@@ -123,30 +124,30 @@ int main(int argc, char **argv)
     bool update_gain = true;
     int count_null_commands = 0;
     bool take_off = false;
-    bool reset_state=false;
-    
+    bool reset_state = false;
+    float max_control_value = 0.2;
     while (ros::ok())
     {
-         
-        if (new_local_pos==false)
-            {
-                Local_UAV_Position=empty_position;
-                //Integral_x=0.0;
-                //Integral_y=0.0;
-            }
-            else
-            {
-                new_local_pos=false;
-            }
-float Gain_z_command=0.0;
-        iteration_indx++;
-        Check_Limits(iteration_indx, 100);
 
-        if(reset_state)
+        if (new_local_pos == false)
         {
-            if(joystick_msg.buttons[6] == 1)
+            Local_UAV_Position = empty_position;
+            //Integral_x=0.0;
+            //Integral_y=0.0;
+        }
+        else
+        {
+            new_local_pos = false;
+        }
+        float Gain_z_command = 0.0;
+        iteration_indx++;
+        iteration_indx = Check_Limits(iteration_indx, 100);
+
+        if (reset_state)
+        {
+            if (joystick_msg.buttons[6] == 1)
             {
-                reset_state=false;
+                reset_state = false;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             ros::spinOnce();
@@ -191,11 +192,11 @@ float Gain_z_command=0.0;
             loop_rate.sleep();
             continue;
         }
-        if(joystick_msg.buttons[6] == 1)  //emergency mode, will fall, take care
+        if (joystick_msg.buttons[6] == 1) //emergency mode, will fall, take care
         {
             std_msgs::Empty Empty_msg;
             pub_reset.publish(Empty_msg);
-            reset_state=true;
+            reset_state = true;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             ros::spinOnce();
             loop_rate.sleep();
@@ -215,45 +216,46 @@ float Gain_z_command=0.0;
         if (update_gain)
         {
             if (joystick_msg.axes[7] == 1.0)
-                {Gain += 0.01;}
+            {
+                Gain += 0.01;
+            }
             if (joystick_msg.axes[7] == -1.0)
-                {Gain -= 0.01;}
+            {
+                Gain -= 0.01;
+            }
             update_gain = false;
         }
         if (joystick_msg.axes[7] == 0.0)
             update_gain = true;
 
-        if (Gain < 0.0)  //uncomment when gain is variable for xy
+        if (Gain < 0.0) //uncomment when gain is variable for xy
             Gain = 0.0;
-        float joystick_x = Gain * joystick_msg.axes[3];  //fixed gain
+        float joystick_x = Gain * joystick_msg.axes[3]; //fixed gain
         float joystick_y = Gain * joystick_msg.axes[2];
         float Gain_z = 0.0;
         double angularJoyCommand = -joystick_msg.buttons[1] + joystick_msg.buttons[3];
 
-        
-        
-        
         if (joystick_msg.axes[4] == 0.0 || joystick_msg.axes[4] == 1.0)
         {
             Gain_z = 0.0;
         }
         else
         {
-            Gain_z = 2.0;
+            Gain_z = 1.0;
         }
         if (joystick_msg.buttons[14] == 1.0)
         {
-            Gain_z = -2.0;
+            Gain_z = -1.0;
         }
-        if( Local_UAV_Position.linear.z>0 )   //Position linear z is the requested altitude
+        if (Local_UAV_Position.linear.z > 0) //Position linear z is the requested altitude
         {
             Gain_z_command = 1.0;
         }
-        if( Local_UAV_Position.linear.z<0 )
+        if (Local_UAV_Position.linear.z < 0)
         {
             Gain_z_command = -1.0;
         }
-        float joystick_z = Gain * ( Gain_z);// Gain * (Gain_z_command + Gain_z);
+        float joystick_z = Gain * (Gain_z); // Gain * (Gain_z_command + Gain_z);
 
         auto time_end = std::chrono::high_resolution_clock::now();
         auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
@@ -267,10 +269,8 @@ float Gain_z_command=0.0;
         ed_control.linear.x = joystick_x + Kp * Local_UAV_Position.linear.x + Kd * derivative_x + Ki * Integral_x;
         ed_control.linear.y = joystick_y + Kp * Local_UAV_Position.linear.y + Kd * derivative_y + Ki * Integral_y;
 
-
-       //std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
+        //std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
         //std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
-
 
         ed_control.linear.z = joystick_z;
         ed_control.angular.y = 0.0;
@@ -278,7 +278,7 @@ float Gain_z_command=0.0;
         ed_control.angular.z = angularJoyCommand;
 
         std::cout << "-**- UAV JOY VALUES    : x" << joystick_x << ", y: " << joystick_y << ", z: " << joystick_z << ", angular: " << angularJoyCommand << std::endl;
-        
+
         std::cout << "-**- UAV CONTROL VALUES: x" << ed_control.linear.x << ", y: " << ed_control.linear.y << ", z: " << ed_control.linear.z << ", angular: " << ed_control.angular.z << std::endl;
         // if (iteration_indx < 55)
         // ed_control.linear.z = 0.01;
@@ -295,11 +295,13 @@ float Gain_z_command=0.0;
             Integral_x = 0.0;
             Integral_y = 0.0;
         }
+        ed_control.linear.x = Check_Limits(ed_control.linear.x, max_control_value);
+        ed_control.linear.y = Check_Limits(ed_control.linear.y, max_control_value);
+        ed_control.linear.z = Check_Limits(ed_control.linear.z, 5.0 * max_control_value);
 
         pub_uav_control.publish(ed_control);
         //pub3.publish(sum_control);
         ros::spinOnce();
-
 
         loop_rate.sleep();
         ++count;
