@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
     ros::Subscriber sub_joint_state = ros_node_handler.subscribe("/dynamixel_workbench_mx/joint_states", 1, JointsState_Handler); //Joint State
 
-    ros::Rate loop_rate(25);
+    ros::Rate loop_rate(28);
     dynamixel_workbench_msgs::DynamixelCommand command_Position;
     command_Position.request.command = "";
     command_Position.request.addr_name = string("Goal_Position");
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
                 client.call(command_Torque);
             }
             torque_enabled = false;
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
             ros::spinOnce();
             loop_rate.sleep();
             continue;
