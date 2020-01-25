@@ -106,13 +106,13 @@ int main(int argc, char **argv)
     float Altitude_Error = 0.0;
     int count = 0;
     float PI = 3.141592654;
-    float Kp = 0.08;
+    float Kp = 0.2;
 
-    float Kd = 0.03;
+    float Kd = 0.2;
     double error_x_old = 0.0;
     double error_y_old = 0.0;
 
-    float Ki = 0.002; //0.02
+    float Ki = 0.000; //0.02
     double Integral_x = 0.0;
     double Integral_y = 0.0;
 
@@ -120,12 +120,12 @@ int main(int argc, char **argv)
     int iteration_indx = 0;
 
     auto time_start = std::chrono::high_resolution_clock::now();
-    double Gain = 0.1;
+    double Gain = 0.25;
     bool update_gain = true;
     int count_null_commands = 0;
     bool take_off = false;
     bool reset_state = false;
-    float max_control_value = 0.2;
+    float max_control_value = 0.3;
     while (ros::ok())
     {
 
@@ -260,6 +260,10 @@ int main(int argc, char **argv)
         auto time_end = std::chrono::high_resolution_clock::now();
         auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
         time_start = std::chrono::high_resolution_clock::now();
+
+        Local_UAV_Position.linear.x = (Local_UAV_Position.linear.x + error_x_old) / 2.0;
+        Local_UAV_Position.linear.y = (Local_UAV_Position.linear.y + error_y_old) / 2.0;
+
         double derivative_x = 1000000.0 * (Local_UAV_Position.linear.x - error_x_old) / elapsed_th.count();
         double derivative_y = 1000000.0 * (Local_UAV_Position.linear.y - error_y_old) / elapsed_th.count();
 
@@ -283,7 +287,7 @@ int main(int argc, char **argv)
         // if (iteration_indx < 55)
         // ed_control.linear.z = 0.01;
 
-        error_x_old = Local_UAV_Position.linear.x;
+        error_x_old = Local_UAV_Position.linear.x; //the command is the errror
         error_y_old = Local_UAV_Position.linear.y;
         if (Local_UAV_Position.linear.x == 0.0 && Local_UAV_Position.linear.x == 0.0)
         {
