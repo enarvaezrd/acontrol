@@ -19,6 +19,7 @@ vector<int> motor_ids{44, 55, 66};
 vector<pair<int, int>> min_max_values_{make_pair(0, 4095), make_pair(850, 3190), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
 vector<double> resolutions_{4096.0 / 360.0, 4096.0 / 360.0, 4096.0 / 360.0};                          //4th joint 4096 / 360
 vector<double> offsets_{0.0, 0.0, 0.0};
+vector<int> motor_velocities_{12, 35, 35};
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;
@@ -113,16 +114,9 @@ int main(int argc, char **argv)
         command_Properties.request.id = motor_ids[j];
         command_Properties.request.value = 3;
         client.call(command_Properties);
-        command_Properties.request.addr_name = string("Profile_Velocity");
-        if (j == 1)
-        {
-            command_Properties.request.value = 12; //17*0.229 = 3.893 RPM  MX64
-        }
-        else
-        {
-            command_Properties.request.value = 35;//20*0.229 = 4.58 RPM  MX64 MX28
-        }
 
+        command_Properties.request.addr_name = string("Profile_Velocity");
+        command_Properties.request.value = motor_velocities_[j]; //17*0.229 = 3.893 RPM  MX64
         client.call(command_Properties);
     }
     while (ros::ok())
@@ -153,7 +147,7 @@ int main(int argc, char **argv)
                 client.call(command_Torque);
             }
             torque_enabled = false;
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             ros::spinOnce();
             loop_rate.sleep();
             continue;
@@ -167,6 +161,11 @@ int main(int argc, char **argv)
                     command_Torque.request.id = motor_ids[j];
                     command_Torque.request.value = 1;
                     client.call(command_Torque);
+
+                    command_Properties.request.id = motor_ids[j];
+                    command_Properties.request.addr_name = string("Profile_Velocity");
+                    command_Properties.request.value = motor_velocities_[j]; //17*0.229 = 3.893 RPM  MX64
+                    client.call(command_Properties);
                 }
                 torque_enabled = true;
             }

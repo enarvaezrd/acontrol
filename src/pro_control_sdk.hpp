@@ -377,7 +377,7 @@ public:
                     reading_count++;
                 }
 
-            } while (dxl_comm_result != COMM_SUCCESS && death_man_state && reading_count > 100 && ros::ok());
+            } while (dxl_comm_result != COMM_SUCCESS && death_man_state && reading_count >10 && ros::ok());
 
             if (!dxl_comm_result)
             {
@@ -408,10 +408,10 @@ public:
 
                 //  printf("[ID:%03d] Goal: %d,  Current Position : %d, Current angle: %f\n", motor_parameters[i].ID, motor_parameters[i].goal_position, motor_parameters[i].current_position, motor_parameters[i].current_angle);
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            //std::this_thread::sleep_for(std::chrono::milliseconds(1));
             Publish_Joints();
             joints_intents_count++;
-        } while (!all_joints_completion && death_man_state && ros::ok() && joints_intents_count < 50);
+        } while (!all_joints_completion && death_man_state && ros::ok() && joints_intents_count < 1);
         if (death_man_state)
             Stop_Motors();
         return true;

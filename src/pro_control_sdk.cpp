@@ -21,10 +21,10 @@ int main(int argc, char **argv)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ros::NodeHandle ros_node_handler;
-    ros::Rate loop_rate(28);
+    ros::Rate loop_rate(30);
     bool service_state = ros::service::exists("/dynamixel_workbench_pro/dynamixel_command", true);
     cout << "service state " << service_state << endl;
-    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 2, Trajectory_Handler);
+    ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 1, Trajectory_Handler);
 
     /*------------------ Motors settings  -------------------*/
     vector<int> motor_ids{11, 22, 33};
@@ -42,8 +42,8 @@ int main(int argc, char **argv)
     double protocol_version = 2.0;
     int baud_rate = 1000000;
 
-    double packet_timeout = 16; //ms
-    int minimum_value_for_movement = 20;
+    double packet_timeout = 8; //ms
+    int minimum_value_for_movement = 10;
     Dynamixel_SDK_Handler DXL_Handler(device_name.c_str(), protocol_version, baud_rate, packet_timeout, minimum_value_for_movement);
     ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, &Dynamixel_SDK_Handler::Joy_Handler, &DXL_Handler); ///robot1/robotnik_base_control/odom
     ros::AsyncSpinner spinner(2);
@@ -101,10 +101,12 @@ int main(int argc, char **argv)
    */
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     bool torque_enabled = false;
+    bool motor_send_positions;
+    bool joystick_state;
     while (ros::ok())
     {
         // DXL_Handler.Ping_Motors();
-        bool joystick_state = false;
+        joystick_state = false;
 
         if (!DXL_Handler.new_joy_message_received || !new_trajectory_received)
         {
@@ -126,7 +128,7 @@ int main(int argc, char **argv)
                 DXL_Handler.Disable_Torques_Bulk();
                 torque_enabled = false;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             ros::spinOnce();
             loop_rate.sleep();
             continue;
@@ -140,14 +142,16 @@ int main(int argc, char **argv)
             }
         }
 
-        vector<double> motor_positions = {trajectory_goal.trajectory.points[0].positions[0],
-                                          trajectory_goal.trajectory.points[0].positions[1],
-                                          trajectory_goal.trajectory.points[0].positions[2]};
+        vector<double> motor_positions_{trajectory_goal.trajectory.points[0].positions[0],
+                                        trajectory_goal.trajectory.points[0].positions[1],
+                                        trajectory_goal.trajectory.points[0].positions[2]};
 
-        bool motor_send_positions = false;
-        while (!motor_send_positions)
+        motor_send_positions = false;
+        int limit_iterations_cnt = 0;
+        while (!motor_send_positions && limit_iterations_cnt < 30)
         {
-            motor_send_positions = DXL_Handler.Bulk_Write_Position_Goals(motor_positions);
+            motor_send_positions = DXL_Handler.Bulk_Write_Position_Goals(motor_positions_);
+            limit_iterations_cnt++;
         }
         loop_rate.sleep();
         ros::spinOnce();
