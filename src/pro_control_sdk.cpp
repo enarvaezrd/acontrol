@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ros::NodeHandle ros_node_handler;
-    ros::Rate loop_rate(30);
+    ros::Rate loop_rate(35);
     bool service_state = ros::service::exists("/dynamixel_workbench_pro/dynamixel_command", true);
     cout << "service state " << service_state << endl;
     ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 1, Trajectory_Handler);
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 
         motor_send_positions = false;
         int limit_iterations_cnt = 0;
-        while (!motor_send_positions && limit_iterations_cnt < 30)
+        while (!motor_send_positions && limit_iterations_cnt < 20)
         {
             motor_send_positions = DXL_Handler.Bulk_Write_Position_Goals(motor_positions_);
             limit_iterations_cnt++;

@@ -37,6 +37,8 @@
   <run_depend>sensor_msgs</run_depend>
   <build_depend>opencv2</build_depend>
   <run_depend>opencv2</run_depend>
+<build_depend>bebop_msgs</build_depend>
+  <run_depend>bebop_msgs</run_depend>
 
   <build_depend>dynamixel_sdk</build_depend>
 <run_depend>dynamixel_sdk</run_depend>

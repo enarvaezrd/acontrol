@@ -19,7 +19,7 @@ vector<int> motor_ids{44, 55, 66};
 vector<pair<int, int>> min_max_values_{make_pair(0, 4095), make_pair(850, 3190), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
 vector<double> resolutions_{4096.0 / 360.0, 4096.0 / 360.0, 4096.0 / 360.0};                          //4th joint 4096 / 360
 vector<double> offsets_{0.0, 0.0, 0.0};
-vector<int> motor_velocities_{12, 35, 35};
+vector<int> motor_velocities_{35, 15, 35};
 
 bool new_joy_message_received = false;
 sensor_msgs::Joy joystick_msg;

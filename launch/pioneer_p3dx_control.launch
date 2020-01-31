@@ -2,7 +2,7 @@
 
 	<!--Joystick-->
 	<arg name="launch_joystick" default="true"/> 
-	<arg name="pioneer_port" default="/dev/ttyUSB0"/> 
+	<arg name="pioneer_port" default="/dev/ttyUSB2"/> 
 	<node if="$(arg launch_joystick)" name="joystick_node" pkg="joy" type="joy_node"/>
 
 	<node name="pioneer_p3dx_control" pkg="ed_control" type="pioneer_p3dx_control"/>

@@ -9,6 +9,7 @@
 #include <geometry_msgs/Twist.h>
 #include <iostream>
 #include <sensor_msgs/Joy.h>
+#include <bebop_msgs/CommonCommonStateBatteryStateChanged.h>
 #include <chrono>
 #include <thread>
 
@@ -64,7 +65,21 @@ void Joy_Handler(const sensor_msgs::Joy &joystick)
     joystick_msg = joystick;
     new_message_received = true;
 }
+void Bebop_Battery_Handler(const bebop_msgs::CommonCommonStateBatteryStateChanged &battery_state)
+{
+    if (battery_state.percent < 20)
+    {
 
+        if (battery_state.percent < 10)
+        {
+            ROS_ERROR(" UAV battery too low!: %d\n" ,(int)(battery_state.percent));
+        }
+        else
+        {
+            std::cout << "[WARNING] UAV battery low: " << (int)(battery_state.percent) << std::endl;
+        }
+    }
+}
 const std::string keys =
     "{ help h ?       | false             | Show help command }"
     "{ altitude a1t   | 1.3               | UAV altitude for tracing task}";
@@ -74,7 +89,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "talker");
     ros::NodeHandle ros_node_handler("~");
     cv::CommandLineParser parser(argc, argv, keys);
-    ros::Rate loop_rate(25.0);
+    ros::Rate loop_rate(35.0);
 
     geometry_msgs::Twist ed_control;
     ed_control.linear.x = 0.0;
@@ -99,20 +114,21 @@ int main(int argc, char **argv)
     ros::Subscriber sub_sonar = ros_node_handler.subscribe("/robot2/sonar_height", 1, sonar_Handler);
     ros::Subscriber sub_gps = ros_node_handler.subscribe("/robot2/fix", 1, GPS_Handler);
     ros::Subscriber sub_local_position = ros_node_handler.subscribe("/robot2/visual_local_guidance/uav_msg", 1, Local_uav_Position_Handler);
-    ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler); //Joystick
+    ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler);                      //Joystick
+    ros::Subscriber sub_bebop_battery_state = ros_node_handler.subscribe("/bebop/states/common/CommonState/BatteryStateChanged", 1, Bebop_Battery_Handler); //Joystick
 
     float Altitude_Set_Point = parser.get<float>("altitude");
 
     float Altitude_Error = 0.0;
     int count = 0;
     float PI = 3.141592654;
-    float Kp = 0.2;
+    float Kp = 0.35;
 
-    float Kd = 0.2;
+    float Kd = 0.35;
     double error_x_old = 0.0;
     double error_y_old = 0.0;
 
-    float Ki = 0.000; //0.02
+    float Ki = 0.05; //0.02
     double Integral_x = 0.0;
     double Integral_y = 0.0;
 
@@ -120,20 +136,21 @@ int main(int argc, char **argv)
     int iteration_indx = 0;
 
     auto time_start = std::chrono::high_resolution_clock::now();
-    double Gain = 0.25;
+    double Gain = 0.35;
     bool update_gain = true;
     int count_null_commands = 0;
     bool take_off = false;
     bool reset_state = false;
-    float max_control_value = 0.3;
+    float max_control_value = 0.8;
     while (ros::ok())
     {
 
         if (new_local_pos == false)
         {
-            Local_UAV_Position = empty_position;
+           // Local_UAV_Position = empty_position;
             //Integral_x=0.0;
             //Integral_y=0.0;
+            
         }
         else
         {
@@ -249,11 +266,11 @@ int main(int argc, char **argv)
         }
         if (Local_UAV_Position.linear.z > 0) //Position linear z is the requested altitude
         {
-            Gain_z_command = 1.0;
+            Gain_z_command = 0.5;
         }
         if (Local_UAV_Position.linear.z < 0)
         {
-            Gain_z_command = -1.0;
+            Gain_z_command = -0.5;
         }
         float joystick_z = Gain * (Gain_z); // Gain * (Gain_z_command + Gain_z);
 
@@ -261,8 +278,8 @@ int main(int argc, char **argv)
         auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
         time_start = std::chrono::high_resolution_clock::now();
 
-        Local_UAV_Position.linear.x = (Local_UAV_Position.linear.x + error_x_old) / 2.0;
-        Local_UAV_Position.linear.y = (Local_UAV_Position.linear.y + error_y_old) / 2.0;
+        //Local_UAV_Position.linear.x = (Local_UAV_Position.linear.x + error_x_old) / 2.0;
+        //Local_UAV_Position.linear.y = (Local_UAV_Position.linear.y + error_y_old) / 2.0;
 
         double derivative_x = 1000000.0 * (Local_UAV_Position.linear.x - error_x_old) / elapsed_th.count();
         double derivative_y = 1000000.0 * (Local_UAV_Position.linear.y - error_y_old) / elapsed_th.count();
@@ -281,7 +298,7 @@ int main(int argc, char **argv)
         ed_control.angular.x = 0.0;
         ed_control.angular.z = angularJoyCommand;
 
-       // std::cout << "-**- UAV JOY VALUES    : x" << joystick_x << ", y: " << joystick_y << ", z: " << joystick_z << ", angular: " << angularJoyCommand << std::endl;
+        // std::cout << "-**- UAV JOY VALUES    : x" << joystick_x << ", y: " << joystick_y << ", z: " << joystick_z << ", angular: " << angularJoyCommand << std::endl;
 
         //std::cout << "-**- UAV CONTROL VALUES: x" << ed_control.linear.x << ", y: " << ed_control.linear.y << ", z: " << ed_control.linear.z << ", angular: " << ed_control.angular.z << std::endl;
         // if (iteration_indx < 55)
@@ -293,6 +310,11 @@ int main(int argc, char **argv)
         {
             count_null_commands++;
         }
+        else
+        {
+            count_null_commands = 0;
+        }
+
         if (count_null_commands > 10)
         {
             count_null_commands = 0;
@@ -301,7 +323,7 @@ int main(int argc, char **argv)
         }
         ed_control.linear.x = Check_Limits(ed_control.linear.x, max_control_value);
         ed_control.linear.y = Check_Limits(ed_control.linear.y, max_control_value);
-        ed_control.linear.z = Check_Limits(ed_control.linear.z, 5.0 * max_control_value);
+        ed_control.linear.z = Check_Limits(ed_control.linear.z, 1.0 * max_control_value);
 
         pub_uav_control.publish(ed_control);
         //pub3.publish(sum_control);

@@ -42,6 +42,7 @@ catkin_package(
   hector_uav_msgs
   control_msgs
   sensor_msgs
+  bebop_msgs
 #  DEPENDS system_lib
    DEPENDS octomap
  moveit_core
