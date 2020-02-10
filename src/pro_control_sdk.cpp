@@ -15,13 +15,36 @@ void Trajectory_Handler(const control_msgs::FollowJointTrajectoryGoal &traj_goal
     new_trajectory_received = true;
 }
 
+bool motor_positions_comparison(vector<double> positions_1, vector<double> positions_2)
+{
+    int size1 = positions_1.size();
+    int size2 = positions_2.size();
+    double max_diff = 0.0001;
+    if (size1 == size1)
+    {
+        for (int i = 0; i < size1; i++)
+        {
+            if (positions_1[i] - max_diff > positions_2[i] || positions_2[i] > positions_1[i] + max_diff)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    else
+    {
+        ROS_ERROR("the motor positions size is not the same pro_arm_sdk\n");
+        return true;
+    }
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "pro_arm_controller_sdk");
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ros::NodeHandle ros_node_handler;
-    ros::Rate loop_rate(35);
+    ros::Rate loop_rate(45);
     bool service_state = ros::service::exists("/dynamixel_workbench_pro/dynamixel_command", true);
     cout << "service state " << service_state << endl;
     ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 1, Trajectory_Handler);
@@ -103,6 +126,8 @@ int main(int argc, char **argv)
     bool torque_enabled = false;
     bool motor_send_positions;
     bool joystick_state;
+    vector<double> old_motor_positions_{0.0, 0.0, 0.0};
+    auto tic_clock = std::chrono::high_resolution_clock::now();
     while (ros::ok())
     {
         // DXL_Handler.Ping_Motors();
@@ -112,7 +137,7 @@ int main(int argc, char **argv)
         {
             joystick_state = false; //just to bypass the first iterations when joy is not available
         }
-        else if (DXL_Handler.joystick_msg.axes[5] != -1.0)
+        else if (!DXL_Handler.death_man_state)
         {
             joystick_state = false;
         }
@@ -122,6 +147,7 @@ int main(int argc, char **argv)
         }
         if (!joystick_state)
         {
+             ROS_INFO("STOPPING %d", joystick_state);
             if (torque_enabled)
             {
                 DXL_Handler.Stop_Motors();
@@ -145,14 +171,28 @@ int main(int argc, char **argv)
         vector<double> motor_positions_{trajectory_goal.trajectory.points[0].positions[0],
                                         trajectory_goal.trajectory.points[0].positions[1],
                                         trajectory_goal.trajectory.points[0].positions[2]};
-
+        DXL_Handler.Read_and_Publish_Joints();
         motor_send_positions = false;
         int limit_iterations_cnt = 0;
-        while (!motor_send_positions && limit_iterations_cnt < 20)
+        //  if (!motor_positions_comparison(old_motor_positions_, motor_positions_))
+        // {
+        while (!motor_send_positions && limit_iterations_cnt < 2)
         {
+
+            //tic_clock = std::chrono::high_resolution_clock::now();
             motor_send_positions = DXL_Handler.Bulk_Write_Position_Goals(motor_positions_);
+            //auto toc_clock = std::chrono::high_resolution_clock::now();
+           // auto elapsed_c = std::chrono::duration_cast<std::chrono::microseconds>(toc_clock - tic_clock);
+           // ROS_INFO("TIME %d, %d", elapsed_c.count(),limit_iterations_cnt);
             limit_iterations_cnt++;
         }
+        // }
+        // else
+        //{
+        //    std::cout << "[Pro Arm SDK] Motor positions same as previous request\n";
+        // }
+
+        old_motor_positions_ = motor_positions_;
         loop_rate.sleep();
         ros::spinOnce();
     }

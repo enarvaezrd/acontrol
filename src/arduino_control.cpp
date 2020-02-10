@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "arduino_control");
 
     ros::NodeHandle ros_node_handler;
-    ros::Rate loop_rate(5);
+    ros::Rate loop_rate(4);
     ros::Subscriber sub_joystick = ros_node_handler.subscribe("/joy", 1, Joy_Handler); //Joystick
 
     ros::Publisher arduino_pub = ros_node_handler.advertise<std_msgs::Int8>("/robot1/arduino_control/flags_msg", 1); //commands for the UAV
@@ -54,9 +54,19 @@ int main(int argc, char **argv)
     pub_msg.data = 0;
     arduino_pub.publish(pub_msg);
     bool msg_sent = false;
+    bool oldDcking = false, oldEM = false;
     while (ros::ok())
     {
         // std::cout<<"flag : "<<EM_flag_received<<std::endl;
+
+        if (oldDcking == docking_flag_received && oldEM == EM_flag_received)
+        {
+            loop_rate.sleep();
+            ros::spinOnce();
+            continue;
+        }
+        oldDcking = docking_flag_received;
+        oldEM = EM_flag_received;
         if (EM_flag_received)
         {
             if (!docking_flag_received)
@@ -69,13 +79,20 @@ int main(int argc, char **argv)
                 pub_msg.data = 2;
                 arduino_pub.publish(pub_msg); //just EM activated
             }
-            msg_sent = true;
         }
-        else if (msg_sent)
+        else 
         {
-            msg_sent = false;
-            pub_msg.data = 0;
-            arduino_pub.publish(pub_msg);
+
+            if (!docking_flag_received)
+            {
+                pub_msg.data = 3;
+                arduino_pub.publish(pub_msg); // docking completion
+            }
+            else
+            {
+                pub_msg.data = 0;
+                arduino_pub.publish(pub_msg); //just EM activated
+            }
         }
 
         loop_rate.sleep();

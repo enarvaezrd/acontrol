@@ -119,6 +119,7 @@ int main(int argc, char **argv)
         command_Properties.request.value = motor_velocities_[j]; //17*0.229 = 3.893 RPM  MX64
         client.call(command_Properties);
     }
+    vector<double> old_motor_positions_ = offsets_;
     while (ros::ok())
     {
         bool joystick_state = false;
@@ -143,8 +144,8 @@ int main(int argc, char **argv)
                 command_Torque.request.addr_name = string("Torque_Enable");
                 command_Torque.request.id = motor_ids[j];
                 command_Torque.request.value = 0;
-                //  if (j != 1)
-                client.call(command_Torque);
+                if (j != 1)
+                    client.call(command_Torque);
             }
             torque_enabled = false;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -176,7 +177,11 @@ int main(int argc, char **argv)
             double request_value = Convert_Radian_to_Value(trajectory_goal.trajectory.points[0].positions[i + mx_offset], i);
             command_Position.request.id = motor_ids[i];
             command_Position.request.value = request_value;
-            client.call(command_Position);
+            //if (old_motor_positions_[i] != request_value)
+            //{
+                client.call(command_Position);
+            //}
+            old_motor_positions_[i] = request_value;
             // std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;
         }
         loop_rate.sleep();

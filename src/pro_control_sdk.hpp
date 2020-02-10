@@ -251,7 +251,7 @@ public:
             }
             else
             {
-               // printf("DXL#%d has been successfully enabled \n", motor.ID);
+                // printf("DXL#%d has been successfully enabled \n", motor.ID);
             }
         }
         return true;
@@ -269,7 +269,7 @@ public:
             dxl_addparam_result = groupBulkWrite.addParam(motor.ID, motor.torque_enable_addr, 1, param_enable_value);
             if (dxl_addparam_result != true)
             {
-               // fprintf(stderr, "[ID:%03d] Enable Motors Torque: groupBulkWrite addparam failed", motor.ID);
+                // fprintf(stderr, "[ID:%03d] Enable Motors Torque: groupBulkWrite addparam failed", motor.ID);
                 return false;
             }
         }
@@ -288,7 +288,7 @@ public:
         bool dxl_addparam_result = false;
         for (auto motor : motor_parameters)
         {
-                dxl_addparam_result = groupBulkRead.addParam(motor.ID, motor.present_position_addr, 4);
+            dxl_addparam_result = groupBulkRead.addParam(motor.ID, motor.present_position_addr, 4);
             if (dxl_addparam_result != true)
             {
                 ROS_ERROR("[ID:%03d] Preparing Reader, grouBulkRead addparam failed", motor.ID);
@@ -307,6 +307,26 @@ public:
         }
 
         return true;
+    }
+    void Read_and_Publish_Joints()
+    {
+        int joints_intents_count = 0;
+
+        for (int i = 0; i < number_motors; i++)
+        {
+            // Check if groupbulkread data of Dynamixel#1 is available
+            bool dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+            if (dxl_getdata_result != true)
+            {
+                continue;
+            }
+            // Get present position value
+            motor_parameters[i].current_position = groupBulkRead.getData(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+
+            motor_parameters[i].current_angle = motor_parameters[i].reverse * Convert_Value_to_Radian(motor_parameters[i].current_position, i);
+        }
+
+        Publish_Joints();
     }
     void Publish_Joints()
     {
@@ -358,7 +378,7 @@ public:
         groupBulkWrite.clearParam();
         if (dxl_comm_result != COMM_SUCCESS)
         {
-           // printf("Write Positions: No success reading,  %s\n", packetHandler->getTxRxResult(dxl_comm_result));
+            // printf("Write Positions: No success reading,  %s\n", packetHandler->getTxRxResult(dxl_comm_result));
             return false;
         }
         // Prepare_Bulk_Reader();
@@ -378,7 +398,7 @@ public:
                     reading_count++;
                 }
 
-            } while (dxl_comm_result != COMM_SUCCESS && death_man_state && reading_count >10 && ros::ok());
+            } while (dxl_comm_result != COMM_SUCCESS && death_man_state && reading_count > 10 && ros::ok());
 
             if (!dxl_comm_result)
             {
@@ -396,7 +416,7 @@ public:
                 dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
                 if (dxl_getdata_result != true)
                 {
-                   // fprintf(stderr, "[ID:%03d] groupBulkRead getdata failed\n", motor_parameters[i].ID);
+                    // fprintf(stderr, "[ID:%03d] groupBulkRead getdata failed\n", motor_parameters[i].ID);
                     continue;
                 }
                 // Get present position value
@@ -412,9 +432,9 @@ public:
             //std::this_thread::sleep_for(std::chrono::milliseconds(1));
             Publish_Joints();
             joints_intents_count++;
-        } while (!all_joints_completion && death_man_state && ros::ok() && joints_intents_count < 1);
-        if (death_man_state)
-            Stop_Motors();
+        } while (!all_joints_completion && death_man_state && ros::ok() && joints_intents_count < 0);
+       // if (death_man_state)
+        //    Stop_Motors();
         return true;
     }
     bool Ping_Motors()
@@ -459,7 +479,7 @@ public:
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 stop_cnt++;
             }
-        } while (dxl_comm_result != COMM_SUCCESS && ros::ok() && stop_cnt < 10);
+        } while (dxl_comm_result != COMM_SUCCESS && ros::ok() && stop_cnt < 5);
 
         for (int i = 0; i < number_motors; i++)
         {
@@ -557,7 +577,7 @@ public:
         groupBulkWrite.clearParam();
         if (dxl_comm_result != COMM_SUCCESS)
         {
-           // printf("Write Disable Torques Bulk: No success reading,  %s\n", packetHandler->getTxRxResult(dxl_comm_result));
+            // printf("Write Disable Torques Bulk: No success reading,  %s\n", packetHandler->getTxRxResult(dxl_comm_result));
             return false;
         }
         return true;
