@@ -7,6 +7,11 @@
 
 #include "pro_control_sdk.hpp"
 
+#define DEVICENAME "/dev/ttyUSB0"
+#define PROTOCOL_VERSION 2.0
+
+
+
 control_msgs::FollowJointTrajectoryGoal trajectory_goal;
 bool new_trajectory_received = false;
 void Trajectory_Handler(const control_msgs::FollowJointTrajectoryGoal &traj_goal)
@@ -51,18 +56,18 @@ int main(int argc, char **argv)
 
     /*------------------ Motors settings  -------------------*/
     vector<int> motor_ids{11, 22, 33};
-    vector<string> motor_types{"pro", "pro", "pro_plus"};
+    vector<string> motor_types{"pro42", "pro54", "pro42_plus"};
     vector<pair<int, int>> min_max_values_{make_pair(-303750, 303750), make_pair(-175000, 175000), make_pair(-228000, 228000)};
-    vector<double> resolutions_{303750.0 / 360.0, 501923.0 / 360.0, 607500.0 / 360.0};
+    vector<double> resolutions_{607500.0 / 360.0, 501923.0 / 360.0, 607500.0 / 360.0};
     vector<double> offsets_{0.0, 0.0, 0.0};
-    vector<int> velocity_limits_{1947, 3218, 641}; //PRO-H54  => 0.00199234 * 1954  = 3.89303236 RPM
+    vector<int> velocity_limits_{500, 3218, 641}; //PRO-H54  => 0.00199234 * 1954  = 3.89303236 RPM
                                                    //PRO-H42P =>       0.01 * 389.3 = 3.89303 RPM
-                                                   //PRO-H42  =>  0.0032928 * 1518  = 5 RPM
+                                                   //PRO-H42  =>  0.01 * 1518  = 5 RPM
     vector<int> mov_reversal_{-1, 1, 1};           //antihorary inversion
     /* ----------------------------------------------------- */
 
-    string device_name = "/dev/ttyUSB0";
-    double protocol_version = 2.0;
+    string device_name = DEVICENAME;
+    float protocol_version = 2.0;
     int baud_rate = 1000000;
 
     double packet_timeout = 8; //ms
@@ -85,7 +90,7 @@ int main(int argc, char **argv)
         motor.velocity_limit = velocity_limits_[i];
         motor.reverse = mov_reversal_[i];
 
-        if (motor_types[i] == "pro_plus")
+        if  (motor_types[i] == "pro42_plus"||motor_types[i] == "pro42") //Firmware (A) version
         {
             motor.torque_enable_addr = 512;
             motor.led_red_addr = 513;
@@ -104,9 +109,25 @@ int main(int argc, char **argv)
     DXL_Handler.Ping_Motors();
 
     bool write_vel_state = false;
-    int count = 0;
-    DXL_Handler.Prepare_Bulk_Reader();
-
+   
+  int reader_count = 0;
+    bool reader_flag = false;
+    while (!reader_flag && reader_count < 100)
+    {
+        reader_flag = DXL_Handler.Prepare_Bulk_Reader();
+        reader_count++;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+     if (!reader_flag)
+    {
+        ROS_INFO("NO POSSIBLE TO READ FROM MOTORS-EXIT");
+        return 0;
+    }
+    else
+    {
+        ROS_INFO("MOTOR READER SUCCESS");
+    }
+    
     /* DETERMINE VELOCITIES IN WINDOWS PROGRAM 
    while (!write_vel_state && ros::ok() && count < 100)
     {
@@ -120,7 +141,6 @@ int main(int argc, char **argv)
         ROS_ERROR("PRO_CONTROL_SDK Can't Write velocity limits! Finished");
         return 0;
     }
-
    */
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     bool torque_enabled = false;
@@ -147,7 +167,7 @@ int main(int argc, char **argv)
         }
         if (!joystick_state)
         {
-             ROS_INFO("STOPPING %d", joystick_state);
+            // ROS_INFO("STOPPING %d", joystick_state);
             if (torque_enabled)
             {
                 DXL_Handler.Stop_Motors();
@@ -171,12 +191,12 @@ int main(int argc, char **argv)
         vector<double> motor_positions_{trajectory_goal.trajectory.points[0].positions[0],
                                         trajectory_goal.trajectory.points[0].positions[1],
                                         trajectory_goal.trajectory.points[0].positions[2]};
-        DXL_Handler.Read_and_Publish_Joints();
+        
         motor_send_positions = false;
         int limit_iterations_cnt = 0;
         //  if (!motor_positions_comparison(old_motor_positions_, motor_positions_))
         // {
-        while (!motor_send_positions && limit_iterations_cnt < 2)
+        while (!motor_send_positions && limit_iterations_cnt < 5)
         {
 
             //tic_clock = std::chrono::high_resolution_clock::now();
@@ -186,6 +206,12 @@ int main(int argc, char **argv)
            // ROS_INFO("TIME %d, %d", elapsed_c.count(),limit_iterations_cnt);
             limit_iterations_cnt++;
         }
+       /* tic_clock = std::chrono::high_resolution_clock::now();
+        //DXL_Handler.Read_and_Publish_Joints();
+        DXL_Handler.Read_Individual_and_Publish_Joints();
+        auto toc_clock = std::chrono::high_resolution_clock::now();
+        auto elapsed_c = std::chrono::duration_cast<std::chrono::microseconds>(toc_clock - tic_clock);
+        ROS_INFO("TIME %d", (int)(elapsed_c.count()));   */    
         // }
         // else
         //{

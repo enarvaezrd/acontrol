@@ -133,6 +133,13 @@ target_link_libraries(pro_control_sdk ${catkin_LIBRARIES})
 add_dependencies(pro_control_sdk ed_control_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 
+add_executable(pro_control_sdk_sp src/pro_control_sdk_sp.cpp)
+   
+target_link_libraries(pro_control_sdk_sp ${catkin_LIBRARIES})
+
+add_dependencies(pro_control_sdk_sp ed_control_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+
+
 add_executable(opencv_image_filter src/image_filter.cpp)
    
 target_link_libraries(opencv_image_filter ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})

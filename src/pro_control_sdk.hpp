@@ -22,21 +22,27 @@
 #include <utility>
 #define DEBUG_
 #include "dynamixel_sdk/dynamixel_sdk.h" // Uses Dynamixel SDK library
+
+// Data Byte Length
+#define LEN_PRO_LED_RED 1
+#define LEN_PRO_GOAL_POSITION 4
+#define LEN_PRO_PRESENT_POSITION 4
+
 using namespace std;
 
 struct motor_params
 {
-    int ID;
+    uint8_t ID;
     pair<int, int> motor_limits;
     double resolution;
     double offset = 0.0;
     double protocol_version = 2.0;
     int moving_threshold = 20;
-    int torque_enable_addr = 562;    //pro H54 H42 , 512 for PRO H42P
-    int led_red_addr = 563;          //513
-    int goal_position_addr = 596;    //564
-    int present_position_addr = 611; //580
-    int velocity_limit_addr = 32;    //44
+    int torque_enable_addr = 562;         //pro H54 H42 , 512 for PRO H42P
+    int led_red_addr = 563;               //513
+    uint16_t goal_position_addr = 596;    //564
+    uint16_t present_position_addr = 611; //580
+    uint16_t velocity_limit_addr = 32;    //44
     int goal_position;
     int32_t current_position = 0;
     double current_angle = 0.0;
@@ -50,11 +56,11 @@ public:
     double packet_timeout;
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;
-    dynamixel::PacketHandler *packetHandlerVel;
+    //dynamixel::PacketHandler *packetHandlerVel;
     dynamixel::GroupBulkWrite groupBulkWrite;
-    dynamixel::GroupBulkWrite groupBulkWriteVel;
+    //dynamixel::GroupBulkWrite groupBulkWriteVel;
     dynamixel::GroupBulkRead groupBulkRead;
-    dynamixel::GroupBulkRead groupBulkRead_VelLimits;
+    // dynamixel::GroupBulkRead groupBulkRead_VelLimits;
     vector<motor_params> motor_parameters;
     int number_motors;
     int minimum_value_for_movement;
@@ -66,14 +72,12 @@ public:
     ros::Publisher joint_states_pub;
     ros::NodeHandle nh;
 
-    Dynamixel_SDK_Handler(const char *dev_name, double protocol_version, int baud_rate_, double packet_timeout_, int min_mov_value_)
+    Dynamixel_SDK_Handler(const char *dev_name, float protocol_version, int baud_rate_, double packet_timeout_, int min_mov_value_)
         : baud_rate(baud_rate_), packet_timeout(packet_timeout_), portHandler(dynamixel::PortHandler::getPortHandler(dev_name)),
           packetHandler(dynamixel::PacketHandler::getPacketHandler(protocol_version)),
-          packetHandlerVel(dynamixel::PacketHandler::getPacketHandler(protocol_version)),
           groupBulkWrite(dynamixel::GroupBulkWrite(portHandler, packetHandler)),
-          groupBulkWriteVel(dynamixel::GroupBulkWrite(portHandler, packetHandlerVel)),
           groupBulkRead(dynamixel::GroupBulkRead(portHandler, packetHandler)),
-          groupBulkRead_VelLimits(dynamixel::GroupBulkRead(portHandler, packetHandlerVel)),
+          // groupBulkRead_VelLimits(dynamixel::GroupBulkRead(portHandler, packetHandlerVel)),
           number_motors(0), minimum_value_for_movement(min_mov_value_), new_joy_message_received(false),
           death_man_state(false), motors_stoped(true)
     {
@@ -152,7 +156,7 @@ public:
         }
         return true;
     }
-    bool Write_Velocity_Limits_Bulk()
+    /* bool Write_Velocity_Limits_Bulk()
     {
         Disable_Torques_Bulk();
         bool dxl_addparam_result = false;
@@ -167,14 +171,14 @@ public:
             param_velocity_value[1] = DXL_LOBYTE(DXL_LOWORD(motor.velocity_limit));
             param_velocity_value[2] = DXL_LOBYTE(DXL_LOWORD(motor.velocity_limit));
             param_velocity_value[3] = DXL_LOBYTE(DXL_LOWORD(motor.velocity_limit));
-            dxl_addparam_result = groupBulkWriteVel.addParam(motor.ID, motor.velocity_limit_addr, 4, param_velocity_value);
+            dxl_addparam_result = groupBulkWrite.addParam(motor.ID, motor.velocity_limit_addr, 4, param_velocity_value);
             if (dxl_addparam_result != true)
             {
                 fprintf(stderr, "[ID:%03d] Bulk Velocity Writter: groupBulkWriteVel addparam failed", motor.ID);
                 return false;
             }
         }
-        dxl_comm_result = groupBulkWriteVel.txPacket();
+        dxl_comm_result = groupBulkWrite.txPacket();
         groupBulkWriteVel.clearParam();
         if (dxl_comm_result != COMM_SUCCESS)
         {
@@ -186,8 +190,8 @@ public:
             fprintf(stderr, " Bulk Velocity Writter: success writting! %s\n", packetHandler->getTxRxResult(dxl_comm_result));
         }
         return true;
-    }
-    bool Check_Velocity_Limits()
+    }*/
+    /* bool Check_Velocity_Limits()
     {
         bool dxl_addparam_result = false;
         bool dxl_getdata_result = false;
@@ -222,7 +226,7 @@ public:
             }
         }
         return true;
-    }
+    }*/
     bool Enable_Torques()
     {
         uint8_t dxl_error = 0;
@@ -241,12 +245,16 @@ public:
 
             if (dxl_comm_result != COMM_SUCCESS)
             {
+#ifdef DEBUG
                 printf("[ID: %03d] No success enabling, %s\n", motor.ID, packetHandler->getTxRxResult(dxl_comm_result));
+#endif
                 return false;
             }
             else if (dxl_error != 0)
             {
+#ifdef DEBUG
                 printf("[ID: %03d] Error enabling, %s\n", motor.ID, packetHandler->getRxPacketError(dxl_error));
+#endif
                 return false;
             }
             else
@@ -277,25 +285,30 @@ public:
         groupBulkWrite.clearParam();
         if (dxl_comm_result != COMM_SUCCESS)
         {
+#ifdef DEBUG
             ROS_ERROR("Write Enabling Value: No success reading,  %s\n", packetHandler->getTxRxResult(dxl_comm_result));
+#endif
             return false;
         }
         return true;
     }
     bool Prepare_Bulk_Reader()
     {
-        groupBulkRead.clearParam();
+        ROS_INFO("PROTOCOL VERSION %d", (int)(groupBulkRead.getPacketHandler()->getProtocolVersion()));
+        //groupBulkRead.clearParam();
         bool dxl_addparam_result = false;
         for (auto motor : motor_parameters)
         {
-            dxl_addparam_result = groupBulkRead.addParam(motor.ID, motor.present_position_addr, 4);
-            if (dxl_addparam_result != true)
+
+            dxl_addparam_result = groupBulkRead.addParam(motor.ID, motor.present_position_addr, LEN_PRO_PRESENT_POSITION);
+            ROS_INFO("PREPARING READER JOINTS ID: %d, Addr: %d", motor.ID, motor.present_position_addr);
+            if (dxl_addparam_result != COMM_SUCCESS)
             {
                 ROS_ERROR("[ID:%03d] Preparing Reader, grouBulkRead addparam failed", motor.ID);
                 return false;
             }
         }
-        groupBulkRead_VelLimits.clearParam();
+        /*groupBulkRead_VelLimits.clearParam();
         for (auto motor : motor_parameters)
         {
             dxl_addparam_result = groupBulkRead_VelLimits.addParam(motor.ID, motor.velocity_limit_addr, 4);
@@ -304,28 +317,113 @@ public:
                 ROS_ERROR("[ID:%03d] Preparing Reader, grouBulkRead_VELLIMITS addparam failed", motor.ID);
                 return false;
             }
-        }
+        }*/
 
         return true;
+    }
+    void Read_Individual_and_Publish_Joints()
+    {
+
+        for (int i = 0; i < number_motors; i++)
+        {
+            int32_t dxl_present_position = 0;
+            uint8_t dxl_error = 0;
+            int dxl_comm_result = COMM_TX_FAIL;
+            int enable_cnt = 0;
+            do
+            {
+                enable_cnt++;
+                dxl_comm_result = packetHandler->read4ByteTxRx(portHandler, motor_parameters[i].ID, motor_parameters[i].present_position_addr, (uint32_t *)&dxl_present_position, &dxl_error);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            } while (dxl_comm_result != COMM_SUCCESS && ros::ok() && enable_cnt < 5);
+
+            if (dxl_comm_result != COMM_SUCCESS)
+            {
+#ifdef DEBUG
+                ROS_INFO("[INDIVIDUAL %d] no success txRxPacket: %s \n", i, packetHandler->getTxRxResult(dxl_comm_result));
+#endif
+            }
+            else if (dxl_error != 0)
+            {
+#ifdef DEBUG
+                ROS_INFO("[INDIVIDUAL %d] ERROR txRxPacket: %s \n", i, packetHandler->getRxPacketError(dxl_error));
+#endif
+            }
+            int *p2;
+            //memcpy(dxl_present_position, p1, 100 * sizeof(int));
+            motor_parameters[i].current_position = dxl_present_position;
+
+            motor_parameters[i].current_angle = motor_parameters[i].reverse * Convert_Value_to_Radian(motor_parameters[i].current_position, i);
+            #ifdef DEBUG
+            printf("[ID:%03d]  PresPos:%03d\n", motor_parameters[i].ID, dxl_present_position);
+            #endif
+        }
+        Publish_Joints();
     }
     void Read_and_Publish_Joints()
     {
         int joints_intents_count = 0;
+        int updated_joints = 0;
 
+        int reading_count = 0;
+        bool dxl_comm_result = false;
+        bool prepare_param_flag = false;
+        //while(!prepare_param_flag)
+        //{
+        //     prepare_param_flag=Prepare_Bulk_Reader();
+        // }
+        do
+        {
+            dxl_comm_result = groupBulkRead.txRxPacket();
+            if (dxl_comm_result != COMM_SUCCESS)
+            {
+                //printf("Error write position goals txRxPacket: %s, retrying! joy state: %d \n", packetHandler->getTxRxResult(dxl_comm_result), death_man_state);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                reading_count++;
+            }
+
+        } while (dxl_comm_result != COMM_SUCCESS && reading_count < 10 && ros::ok());
+
+        if (dxl_comm_result != COMM_SUCCESS)
+        {
+            #ifdef DEBUG
+            ROS_INFO("CANT READ FROM JOINTS");
+            #endif
+            //return;
+        }
+        else
+        {
+            #ifdef DEBUG
+            ROS_INFO("READ SUCCESS FROM JOINTS %d", number_motors);
+            #endif
+        };
+        
         for (int i = 0; i < number_motors; i++)
         {
             // Check if groupbulkread data of Dynamixel#1 is available
-            bool dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+            bool dxl_getdata_result = false;
+            int get_data_cnt = 0;
+           // ROS_INFO("READING JOINTS ID: %d, Addr: %d", motor_parameters[i].ID, motor_parameters[i].present_position_addr);
+            do
+            {
+                dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, LEN_PRO_PRESENT_POSITION);
+                std::this_thread::sleep_for(std::chrono::milliseconds(6));
+                get_data_cnt++;
+            } while (!dxl_getdata_result && ros::ok() && get_data_cnt < 5);
+
             if (dxl_getdata_result != true)
             {
                 continue;
             }
+           // ROS_INFO("READ SUCCESS JOINTS ID: %d, Addr: %d", motor_parameters[i].ID, motor_parameters[i].present_position_addr);
             // Get present position value
-            motor_parameters[i].current_position = groupBulkRead.getData(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+            motor_parameters[i].current_position = groupBulkRead.getData(motor_parameters[i].ID, motor_parameters[i].present_position_addr, LEN_PRO_PRESENT_POSITION);
 
             motor_parameters[i].current_angle = motor_parameters[i].reverse * Convert_Value_to_Radian(motor_parameters[i].current_position, i);
+            updated_joints++;
         }
-
+        // groupBulkRead.clearParam();
+       // ROS_INFO("UPDATED JOINTS %d", updated_joints);
         Publish_Joints();
     }
     void Publish_Joints()
@@ -366,7 +464,7 @@ public:
             param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(goal));
             param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(goal));
 
-            dxl_addparam_result = groupBulkWrite.addParam(motor_parameters[i].ID, motor_parameters[i].goal_position_addr, 4, param_goal_position);
+            dxl_addparam_result = groupBulkWrite.addParam(motor_parameters[i].ID, motor_parameters[i].goal_position_addr, LEN_PRO_GOAL_POSITION, param_goal_position);
             if (dxl_addparam_result != true)
             {
                 fprintf(stderr, "[ID:%03d] groupBulkWrite addparam failed", motor_parameters[i].ID);
@@ -393,12 +491,12 @@ public:
                 dxl_comm_result = groupBulkRead.txRxPacket();
                 if (dxl_comm_result != COMM_SUCCESS)
                 {
-                    printf("Error write position goals txRxPacket: %s, retrying! joy state: %d \n", packetHandler->getTxRxResult(dxl_comm_result), death_man_state);
-                    //std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    //printf("Error write position goals txRxPacket: %s, retrying! joy state: %d \n", packetHandler->getTxRxResult(dxl_comm_result), death_man_state);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     reading_count++;
                 }
 
-            } while (dxl_comm_result != COMM_SUCCESS && death_man_state && reading_count > 10 && ros::ok());
+            } while (dxl_comm_result != COMM_SUCCESS && death_man_state && reading_count <2 && ros::ok());
 
             if (!dxl_comm_result)
             {
@@ -410,30 +508,32 @@ public:
             }
             all_joints_completion = true;
             vector<double> position_differences;
+            int updated_joints = 0;
             for (int i = 0; i < number_motors; i++)
             {
                 // Check if groupbulkread data of Dynamixel#1 is available
-                dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+                dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, LEN_PRO_PRESENT_POSITION);
                 if (dxl_getdata_result != true)
                 {
                     // fprintf(stderr, "[ID:%03d] groupBulkRead getdata failed\n", motor_parameters[i].ID);
                     continue;
                 }
                 // Get present position value
-                motor_parameters[i].current_position = groupBulkRead.getData(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+                motor_parameters[i].current_position = groupBulkRead.getData(motor_parameters[i].ID, motor_parameters[i].present_position_addr, LEN_PRO_PRESENT_POSITION);
                 if (abs(motor_parameters[i].current_position - motor_parameters[i].goal_position) > minimum_value_for_movement)
                 {
                     all_joints_completion = false;
                 }
                 motor_parameters[i].current_angle = motor_parameters[i].reverse * Convert_Value_to_Radian(motor_parameters[i].current_position, i);
-
+                updated_joints++;
                 //  printf("[ID:%03d] Goal: %d,  Current Position : %d, Current angle: %f\n", motor_parameters[i].ID, motor_parameters[i].goal_position, motor_parameters[i].current_position, motor_parameters[i].current_angle);
             }
+            //ROS_INFO("UPDATED JOINTS %d", updated_joints);
             //std::this_thread::sleep_for(std::chrono::milliseconds(1));
             Publish_Joints();
             joints_intents_count++;
         } while (!all_joints_completion && death_man_state && ros::ok() && joints_intents_count < 0);
-       // if (death_man_state)
+        // if (death_man_state)
         //    Stop_Motors();
         return true;
     }
@@ -475,7 +575,7 @@ public:
             dxl_comm_result = groupBulkRead.txRxPacket();
             if (dxl_comm_result != COMM_SUCCESS)
             {
-                printf("Error Stopping: %s, retrying!\n", packetHandler->getTxRxResult(dxl_comm_result));
+               // printf("Error Stopping: %s, retrying!\n", packetHandler->getTxRxResult(dxl_comm_result));
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 stop_cnt++;
             }
@@ -484,13 +584,13 @@ public:
         for (int i = 0; i < number_motors; i++)
         {
 
-            dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+            dxl_getdata_result = groupBulkRead.isAvailable(motor_parameters[i].ID, motor_parameters[i].present_position_addr, LEN_PRO_PRESENT_POSITION);
             if (dxl_getdata_result != true)
             {
                 //fprintf(stderr, "[ID:%03d] groupBulkRead getdata failed\n", motor_parameters[i].ID);
                 return;
             }
-            motor_parameters[i].current_position = groupBulkRead.getData(motor_parameters[i].ID, motor_parameters[i].present_position_addr, 4);
+            motor_parameters[i].current_position = groupBulkRead.getData(motor_parameters[i].ID, motor_parameters[i].present_position_addr, LEN_PRO_PRESENT_POSITION);
             motor_parameters[i].current_angle = motor_parameters[i].reverse * Convert_Value_to_Radian(motor_parameters[i].current_position, i);
             //printf("[ID:%03d] Goal: %d,  Current Position : %d \n", motor_parameters[i].ID, motor_parameters[i].goal_position, motor_parameters[i].current_position);
         }
@@ -507,10 +607,10 @@ public:
                 param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(goal));
                 param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(goal));
 
-                dxl_addparam_result = groupBulkWrite.addParam(motor_parameters[i].ID, motor_parameters[i].goal_position_addr, 4, param_goal_position);
+                dxl_addparam_result = groupBulkWrite.addParam(motor_parameters[i].ID, motor_parameters[i].goal_position_addr, LEN_PRO_GOAL_POSITION, param_goal_position);
                 if (dxl_addparam_result != true)
                 {
-                    fprintf(stderr, "[ID:%03d] stopping mottors groupBulkWrite addparam failed", motor_parameters[i].ID);
+                  //  fprintf(stderr, "[ID:%03d] stopping mottors groupBulkWrite addparam failed", motor_parameters[i].ID);
                     return;
                 }
             }
@@ -540,12 +640,12 @@ public:
             } while (dxl_comm_result != COMM_SUCCESS && ros::ok() && disable_cnt < 30);
             if (dxl_comm_result != COMM_SUCCESS)
             {
-                printf("[ID: %03d] No success disabling, %s\n", motor.ID, packetHandler->getTxRxResult(dxl_comm_result));
+               // printf("[ID: %03d] No success disabling, %s\n", motor.ID, packetHandler->getTxRxResult(dxl_comm_result));
                 return false;
             }
             else if (dxl_error != 0)
             {
-                printf("[ID: %03d] Error disabling, %s\n", motor.ID, packetHandler->getRxPacketError(dxl_error));
+               // printf("[ID: %03d] Error disabling, %s\n", motor.ID, packetHandler->getRxPacketError(dxl_error));
                 return false;
             }
             else
@@ -565,7 +665,8 @@ public:
         param_disable_value[0] = DXL_LOBYTE(DXL_LOWORD(goal));
         for (auto motor : motor_parameters)
         {
-
+            //if (motor.ID == 22)
+            //    continue;
             dxl_addparam_result = groupBulkWrite.addParam(motor.ID, motor.torque_enable_addr, 1, param_disable_value);
             if (dxl_addparam_result != true)
             {
