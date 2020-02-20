@@ -10,4 +10,6 @@
 		<param name="port" value="$(arg pioneer_port)"/>
 	</node>
 
+  	<node pkg="tf" type="static_transform_publisher" name="pioneer_joint_broadcaster_0" args="0 0 0 0 0 0 odom sonar 10" />
+
 </launch>

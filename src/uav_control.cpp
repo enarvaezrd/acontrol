@@ -166,8 +166,9 @@ int main(int argc, char **argv)
             if (joystick_msg.buttons[6] == 1)
             {
                 reset_state = false;
+                take_off = false;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             ros::spinOnce();
             loop_rate.sleep();
             continue;
@@ -191,9 +192,11 @@ int main(int argc, char **argv)
                 std_msgs::Empty Empty_msg;
                 pub_takeoff.publish(Empty_msg);
                 take_off = true;
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(4500));
+                ros::spinOnce();
+                loop_rate.sleep();
+                continue;
             }
-
             joystick_state = true;
         }
 
@@ -215,8 +218,9 @@ int main(int argc, char **argv)
             std_msgs::Empty Empty_msg;
             pub_reset.publish(Empty_msg);
             reset_state = true;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            take_off = false;
             ros::spinOnce();
+            std::this_thread::sleep_for(std::chrono::milliseconds(4000));
             loop_rate.sleep();
             continue;
         }
@@ -226,7 +230,7 @@ int main(int argc, char **argv)
             std_msgs::Empty Empty_msg;
             pub_land.publish(Empty_msg);
             take_off = false;
-            std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(3000));
             ros::spinOnce();
             loop_rate.sleep();
             continue;
@@ -275,12 +279,12 @@ int main(int argc, char **argv)
         }
         float joystick_z = Gain * (Gain_z); // Gain * (Gain_z_command + Gain_z);
         float error_z = 0.0;
-        if (Local_UAV_Position.linear.z > 0.5&&Local_UAV_Position.linear.z < 1.0)
+        if (Local_UAV_Position.linear.z > 0.5 && Local_UAV_Position.linear.z < 1.0)
         {
             //  error_z = Local_UAV_Position.linear.z - uav_odometry.pose.pose.position.z;
             joystick_z = Check_Limits(joystick_z, 0.08);
         }
-        
+
         //joystick_z = Check_Limits(joystick_z, 0.08);
         error_z = Check_Limits(error_z, 0.05);
         auto time_end = std::chrono::high_resolution_clock::now();

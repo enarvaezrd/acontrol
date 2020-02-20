@@ -665,8 +665,8 @@ public:
         param_disable_value[0] = DXL_LOBYTE(DXL_LOWORD(goal));
         for (auto motor : motor_parameters)
         {
-            //if (motor.ID == 22)
-            //    continue;
+            if (motor.ID == 22)
+                continue;
             dxl_addparam_result = groupBulkWrite.addParam(motor.ID, motor.torque_enable_addr, 1, param_disable_value);
             if (dxl_addparam_result != true)
             {
