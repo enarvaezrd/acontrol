@@ -16,9 +16,9 @@ int mx_offset = 3; //first mx motor is in mx_offset joint
 using namespace std;
 
 vector<int> motor_ids{44, 55, 66};
-vector<pair<int, int>> min_max_values_{make_pair(0, 4095), make_pair(850, 3190), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
+vector<pair<int, int>> min_max_values_{make_pair(0, 4095), make_pair(780, 3450), make_pair(0, 4095)}; //joint 4 make_pair(0, 4095)
 vector<double> resolutions_{4096.0 / 360.0, 4096.0 / 360.0, 4096.0 / 360.0};                          //4th joint 4096 / 360
-vector<double> offsets_{0.0, -0.04, 0.0};
+vector<double> offsets_{0.0, -0.0, 0.0};
 vector<int> motor_velocities_{35, 15, 35};
 
 bool new_joy_message_received = false;
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 
     ros::Subscriber sub_joint_state = ros_node_handler.subscribe("/dynamixel_workbench_mx/joint_states", 1, JointsState_Handler); //Joint State
 
-    ros::Rate loop_rate(28);
+    ros::Rate loop_rate(45);
     dynamixel_workbench_msgs::DynamixelCommand command_Position;
     command_Position.request.command = "";
     command_Position.request.addr_name = string("Goal_Position");
@@ -144,8 +144,8 @@ int main(int argc, char **argv)
                 command_Torque.request.addr_name = string("Torque_Enable");
                 command_Torque.request.id = motor_ids[j];
                 command_Torque.request.value = 0;
-                if (j != 1)
-                    client.call(command_Torque);
+                // if (j != 1)
+                //  client.call(command_Torque);  //NOT DISABLING FOR NOW
             }
             torque_enabled = false;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
             command_Position.request.value = request_value;
             //if (old_motor_positions_[i] != request_value)
             //{
-                client.call(command_Position);
+            client.call(command_Position);
             //}
             old_motor_positions_[i] = request_value;
             // std::cout << "Joint" << motor_ids[i] << ", request: " << trajectory_goal.trajectory.points[0].positions[i + mx_offset] << ", transformed value: " << request_value << std::endl;

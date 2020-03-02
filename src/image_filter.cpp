@@ -102,6 +102,7 @@ public:
         cv::Mat bgr[3], img; //destination array
 
         split(cv_ptr->image, bgr); //split source
+        //ROS_INFO("Camera Size %d x %d",cv_ptr->image.rows,cv_ptr->image.cols);
 
         cv::threshold(bgr[0], gray_image_b, 250, 20, cv::THRESH_TOZERO_INV);
         cv::threshold(bgr[1], gray_image_g, 250, 20, cv::THRESH_TOZERO_INV);

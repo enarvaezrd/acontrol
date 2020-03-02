@@ -480,7 +480,7 @@ public:
             return false;
         }
         // Prepare_Bulk_Reader();
-        motors_stoped = false;
+       /* motors_stoped = false;
         bool all_joints_completion;
         int joints_intents_count = 0;
         do
@@ -492,7 +492,7 @@ public:
                 if (dxl_comm_result != COMM_SUCCESS)
                 {
                     //printf("Error write position goals txRxPacket: %s, retrying! joy state: %d \n", packetHandler->getTxRxResult(dxl_comm_result), death_man_state);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    //std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     reading_count++;
                 }
 
@@ -534,7 +534,7 @@ public:
             joints_intents_count++;
         } while (!all_joints_completion && death_man_state && ros::ok() && joints_intents_count < 0);
         // if (death_man_state)
-        //    Stop_Motors();
+        //    Stop_Motors();*/
         return true;
     }
     bool Ping_Motors()

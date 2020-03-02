@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ros::NodeHandle ros_node_handler;
-    ros::Rate loop_rate(45);
+    ros::Rate loop_rate(50);
     bool service_state = ros::service::exists("/dynamixel_workbench_pro/dynamixel_command", true);
     cout << "service state " << service_state << endl;
     ros::Subscriber sub_Trajectory = ros_node_handler.subscribe("/robot1/arm_general/goal_command", 1, Trajectory_Handler);
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
         int limit_iterations_cnt = 0;
         //  if (!motor_positions_comparison(old_motor_positions_, motor_positions_))
         // {
-        while (!motor_send_positions && limit_iterations_cnt < 5)
+        while (!motor_send_positions && limit_iterations_cnt < 2)
         {
 
             //tic_clock = std::chrono::high_resolution_clock::now();

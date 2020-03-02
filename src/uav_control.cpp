@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "talker");
     ros::NodeHandle ros_node_handler("~");
     cv::CommandLineParser parser(argc, argv, keys);
-    ros::Rate loop_rate(35.0);
+    ros::Rate loop_rate(45.0);
 
     geometry_msgs::Twist ed_control;
     ed_control.linear.x = 0.0;
@@ -123,9 +123,9 @@ int main(int argc, char **argv)
     float Altitude_Error = 0.0;
     int count = 0;
     float PI = 3.141592654;
-    float Kp = 0.4;
+    float Kp = 0.48;
 
-    float Kd = 0.4;
+    float Kd = 0.48;
     double error_x_old = 0.0;
     double error_y_old = 0.0;
 
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
     int count_null_commands = 0;
     bool take_off = false;
     bool reset_state = false;
-    float max_control_value = 0.7;
+    float max_control_value = 0.6;
     std::this_thread::sleep_for(std::chrono::milliseconds(2800));
     while (ros::ok())
     {
@@ -163,12 +163,19 @@ int main(int argc, char **argv)
 
         if (reset_state)
         {
-            if (joystick_msg.buttons[6] == 1)
+
+            if (joystick_msg.buttons[6] == 1 )
             {
+
                 reset_state = false;
-                take_off = false;
+                take_off = true;
+                std_msgs::Empty Empty_msg;
+                pub_takeoff.publish(Empty_msg);
+                ros::spinOnce();
+                std::this_thread::sleep_for(std::chrono::milliseconds(3500));
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            
             ros::spinOnce();
             loop_rate.sleep();
             continue;
@@ -192,7 +199,7 @@ int main(int argc, char **argv)
                 std_msgs::Empty Empty_msg;
                 pub_takeoff.publish(Empty_msg);
                 take_off = true;
-                std::this_thread::sleep_for(std::chrono::milliseconds(4500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(3500));
                 ros::spinOnce();
                 loop_rate.sleep();
                 continue;
@@ -213,19 +220,20 @@ int main(int argc, char **argv)
             loop_rate.sleep();
             continue;
         }
-        if (joystick_msg.buttons[6] == 1) //emergency mode, will fall, take care
+        if (joystick_msg.buttons[6] == 1 ) //emergency mode, will fall, take care
         {
             std_msgs::Empty Empty_msg;
             pub_reset.publish(Empty_msg);
             reset_state = true;
             take_off = false;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
             ros::spinOnce();
-            std::this_thread::sleep_for(std::chrono::milliseconds(4000));
             loop_rate.sleep();
             continue;
         }
 
-        if (joystick_msg.buttons[7] == 1)
+        if (joystick_msg.buttons[7] == 1)   //landing
         {
             std_msgs::Empty Empty_msg;
             pub_land.publish(Empty_msg);
@@ -271,22 +279,26 @@ int main(int argc, char **argv)
         }
         if (Local_UAV_Position.linear.z > 0) //Position linear z is the requested altitude
         {
-            Gain_z_command = 0.2;
+            Gain_z_command = 0.25;
         }
         if (Local_UAV_Position.linear.z < 0)
         {
-            Gain_z_command = -0.2;
+            Gain_z_command = -0.25;
         }
         float joystick_z = Gain * (Gain_z); // Gain * (Gain_z_command + Gain_z);
         float error_z = 0.0;
+        float final_Kp=Kp;
+        float final_Kd=Kd;
         if (Local_UAV_Position.linear.z > 0.5 && Local_UAV_Position.linear.z < 1.0)
         {
             //  error_z = Local_UAV_Position.linear.z - uav_odometry.pose.pose.position.z;
-            joystick_z = Check_Limits(joystick_z, 0.08);
+            joystick_z = Check_Limits(joystick_z, 0.06);
+            final_Kp-=0.08;
+            final_Kd-=0.08;
         }
 
         //joystick_z = Check_Limits(joystick_z, 0.08);
-        error_z = Check_Limits(error_z, 0.05);
+        error_z = Check_Limits(error_z, 0.2);
         auto time_end = std::chrono::high_resolution_clock::now();
         auto elapsed_th = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
         time_start = std::chrono::high_resolution_clock::now();
@@ -300,13 +312,13 @@ int main(int argc, char **argv)
         Integral_x += (Local_UAV_Position.linear.x * elapsed_th.count()) / 1000000.0;
         Integral_y += (Local_UAV_Position.linear.y * elapsed_th.count()) / 1000000.0;
 
-        ed_control.linear.x = joystick_x + Kp * Local_UAV_Position.linear.x + Kd * derivative_x + Ki * Integral_x;
-        ed_control.linear.y = joystick_y + Kp * Local_UAV_Position.linear.y + Kd * derivative_y + Ki * Integral_y;
+        ed_control.linear.x = joystick_x + final_Kp * Local_UAV_Position.linear.x + final_Kd * derivative_x + Ki * Integral_x;
+        ed_control.linear.y = joystick_y + final_Kp * Local_UAV_Position.linear.y + final_Kd * derivative_y + Ki * Integral_y;
 
         //std::cout << "-**- UAV ERROR x: " << Local_UAV_Position.linear.x << ", y: " << Local_UAV_Position.linear.y << std::endl;
         //std::cout << "-**- UAV CORRECCION x: " << ed_control.linear.x << ", y: " << ed_control.linear.y << std::endl;
 
-        ed_control.linear.z = joystick_z + error_z;
+        ed_control.linear.z = joystick_z;// + error_z;
         ed_control.angular.y = 0.0;
         ed_control.angular.x = 0.0;
         ed_control.angular.z = angularJoyCommand;
@@ -338,7 +350,7 @@ int main(int argc, char **argv)
         }
         ed_control.linear.x = Check_Limits(ed_control.linear.x, max_control_value);
         ed_control.linear.y = Check_Limits(ed_control.linear.y, max_control_value);
-        ed_control.linear.z = Check_Limits(ed_control.linear.z, 0.8 * max_control_value);
+        ed_control.linear.z = Check_Limits(ed_control.linear.z, 1.0 * max_control_value);
 
         pub_uav_control.publish(ed_control);
         //pub3.publish(sum_control);
